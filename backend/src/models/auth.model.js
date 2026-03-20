@@ -5,25 +5,25 @@ import jwt from "jsonwebtoken";
 const userSchema = new mongoose.Schema(
   {
     fullName: {
-        type:String,
-        required:true,
-        trim:true
+      type: String,
+      required: true,
+      trim: true,
     },
     email: {
-        type: String,
-        required:true,
-        trim:true,
-        lowercase:true,
-        unique:true
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
     },
     mobileNumber: {
-        type:String,
-        trim:true,
-        required:true
+      type: String,
+      trim: true,
+      required: true,
     },
     bio: {
-        type:String,
-        trim:true
+      type: String,
+      trim: true,
     },
     gender: {
       type: String,
@@ -40,18 +40,18 @@ const userSchema = new mongoose.Schema(
       },
     },
     password: {
-        type: String,
-        required: [true, "Password is required"],
+      type: String,
+      required: [true, "Password is required"],
     },
     refreshToken: {
-        type:String
+      type: String,
     },
   },
   { timestamps: true }
 );
 
 // indexing on email for fast searching
-userSchema.index({email:1, createdAt: -1});
+userSchema.index({ email: 1, createdAt: -1 });
 
 // hash password if its changing
 userSchema.pre("save", async function () {
@@ -70,12 +70,12 @@ userSchema.methods.generateAccessToken = function () {
     {
       _id: this._id,
       fullName: this.fullName,
-      email: this.email
+      email: this.email,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    },
+    }
   );
 };
 
@@ -88,7 +88,7 @@ userSchema.methods.generateRefreshToken = function () {
     process.env.REFRESH_TOKEN_SECRET,
     {
       expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    },
+    }
   );
 };
 
