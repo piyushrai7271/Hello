@@ -6,6 +6,7 @@ import { asyncHandler } from "../middlewares/error.middleware.js";
 import generateAccessAndRefreshToken from "../services/auth.service.js";
 import {uploadOnCloudinary,deleteFromCloudinary} from "../config/cloudinary.js";
 import {getAccessTokenOptions,getRefreshTokenOptions} from "../utils/cookieOptions.js";
+import { isAccountLocked, recordFailedAttempt, clearLoginAttempts } from "../services/loginSecurity.services.js";
 
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -56,17 +57,38 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "email or password is missing");
   }
 
+  // 1. Check if account is locked (VERY IMPORTANT)
+  const isLocked = await isAccountLocked(email);
+  if (isLocked) {
+    throw new ApiError(403, "Account is temporarily locked. Try again later.");
+  }
+
   // find user with email
   const user = await User.findOne({ email });
+
   if (!user) {
-  throw new ApiError(401, "Invalid credentials");
-}
+    // record failed attempt
+    await recordFailedAttempt(email);
+    throw new ApiError(401, "Invalid email or password");
+  }
 
   // if user found validate password
   const isPasswordValid = await user.isPasswordCorrect(password);
+
   if (!isPasswordValid) {
-    throw new ApiError(401, "Please provide valid password");
+    //record failed attempt
+    const locked = await recordFailedAttempt(email);
+
+    //if account just got locked
+    if (locked) {
+      throw new ApiError(403, "Account locked due to too many failed attempts");
+    }
+
+    throw new ApiError(401, "Invalid email or password");
   }
+
+  // 2. RESET attempts on success (VERY IMPORTANT 🔥)
+  await clearLoginAttempts(email);
 
   // if password is correct generate access and refresh token
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(

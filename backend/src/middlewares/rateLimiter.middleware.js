@@ -10,19 +10,31 @@ const globalRateLimiter = rateLimit({
   // method to generate custom identifer for client
   keyGenerator: (req) => {
     const ip = ipKeyGenerator(req.ip);
-    return req.userId ? `${ip}:${req.userId}` : ip;
+
+    // Before login → only IP
+    return ip;
+  },
+  // this help to avoid adding rate limiting on health check api's
+  skip: (req) => { 
+    // skip health checks
+    if (req.path === "/health") return true;
+
+    // skip internal services
+    if (req.headers["x-internal-api"] === "true") return true;
+
+    return false;
   },
   // help to unable new header stander
   standardHeaders: true,
-  // help to block previous header of x-Header 
-  legacyHeaders: false, 
+  // help to block previous header of x-Header
+  legacyHeaders: false,
   // this line is for giving proper message in response
   handler: rateLimitHandler,
   // this is for storing attampts
   store: new RedisStore({
     // used for making different limiter in one redis store
-    prefix: "rl:global:", 
-   // all the variable store in key value so, to run them we need sendCommand
+    prefix: "rl:global:",
+    // all the variable store in key value so, to run them we need sendCommand
     sendCommand: (...args) => redisClient.sendCommand(args),
   }),
 });
@@ -32,12 +44,24 @@ const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
 
+  // method to generate custom identifer for client
+  keyGenerator: (req) => {
+    const ip = ipKeyGenerator(req.ip);
+    const email = req.body?.email;
+
+    // During login → email + IP
+    return email ? `${email}:${ip}` : ip;
+  },
+
   standardHeaders: true,
   legacyHeaders: false,
 
-  message: "Too many login attempts. Try again later.",
-
-  handler: rateLimitHandler,
+  // this line is for giving proper message in response
+  handler: (req, res, options) =>
+    rateLimitHandler(req, res, {
+      ...options,
+      message: "Too many login attempts. Try again later.",
+    }),
 
   store: new RedisStore({
     prefix: "rl:auth:",
@@ -45,6 +69,29 @@ const authRateLimiter = rateLimit({
   }),
 });
 
+// AFTER LOGIN limiter (optional but advanced)
+const userRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200, // can be higher for authenticated users
 
+  // method to generate custom identifer for client
+  keyGenerator: (req) => {
+    const ip = ipKeyGenerator(req.ip);
 
-export { globalRateLimiter, authRateLimiter };
+    // After login → use userId if available
+    return req.userId ? `${req.userId}` : ip;
+  },
+
+  standardHeaders: true,
+  legacyHeaders: false,
+
+  // this line is for giving proper message in response
+  handler: rateLimitHandler,
+
+  store: new RedisStore({
+    prefix: "rl:user:",
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+});
+
+export { globalRateLimiter, authRateLimiter, userRateLimiter };
