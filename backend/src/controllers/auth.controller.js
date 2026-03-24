@@ -6,7 +6,7 @@ import { asyncHandler } from "../middlewares/error.middleware.js";
 import generateAccessAndRefreshToken from "../services/auth.service.js";
 import {uploadOnCloudinary,deleteFromCloudinary} from "../config/cloudinary.js";
 import {getAccessTokenOptions,getRefreshTokenOptions} from "../utils/cookieOptions.js";
-import { isAccountLocked, recordFailedAttempt, clearLoginAttempts } from "../services/loginSecurity.services.js";
+import { isAccountLocked, recordFailedAttempt, clearLoginAttempts } from "../services/loginSecurity.service.js";
 
 
 const registerUser = asyncHandler(async (req, res) => {
