@@ -1,4 +1,0 @@
-const registerPrivateChat = () =>{}
-
-
-export {registerPrivateChat}

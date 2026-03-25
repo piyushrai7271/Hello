@@ -20,8 +20,10 @@ app.use(globalRateLimiter);
 
 // import routes..........
 import userRouter from "./routes/auth.routes.js";
+import chatRouter from "./routes/chat.routes.js";
 
 app.use("/api/user", userRouter);
+app.use("/api/chat",chatRouter);
 
 // global error handler
 app.use(errorMiddleware);

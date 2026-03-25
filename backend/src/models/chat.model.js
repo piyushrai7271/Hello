@@ -6,24 +6,20 @@ const chatSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
     members: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
     ],
-
     groupName: {
       type: String,
       trim: true,
     },
-
     groupAdmin: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-
     lastMessage: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
