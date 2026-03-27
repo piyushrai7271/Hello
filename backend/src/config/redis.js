@@ -30,7 +30,7 @@ if (process.env.REDIS_URL) {
     redisClient = null;
   }
 } else {
-  console.log("⚠️ No REDIS_URL, using memory rate limiter");
+  console.log(" No REDIS_URL, using memory rate limiter");
 }
 
 export default redisClient;

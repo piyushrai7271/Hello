@@ -29,7 +29,7 @@ const uploadOnCloudinary = async (file, folder = "Hellow") => {
   }
 };
 
-// Delete File from Cloudinary
+// Delete File from Cloudinary handles
 const deleteFromCloudinary = async (publicId) => {
   try {
     if (!publicId) return null;
