@@ -5,7 +5,7 @@ import connectDb from "./config/database.connection.js";
 import initSocket from "./socket/index.js";
 
 // env variables.......
-const port = process.env.PORT || 5100;
+const port = process.env.PORT || 5000;
 
 connectDb()
   .then(() => {
