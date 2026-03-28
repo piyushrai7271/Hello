@@ -4,9 +4,19 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { asyncHandler } from "../middlewares/error.middleware.js";
 import generateAccessAndRefreshToken from "../services/auth.service.js";
-import {uploadOnCloudinary,deleteFromCloudinary} from "../config/cloudinary.js";
-import {getAccessTokenOptions,getRefreshTokenOptions} from "../utils/cookieOptions.js";
-import { isAccountLocked, recordFailedAttempt, clearLoginAttempts } from "../services/loginSecurity.service.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../config/cloudinary.js";
+import {
+  getAccessTokenOptions,
+  getRefreshTokenOptions,
+} from "../utils/cookieOptions.js";
+import {
+  isAccountLocked,
+  recordFailedAttempt,
+  clearLoginAttempts,
+} from "../services/loginSecurity.service.js";
 
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -151,8 +161,8 @@ const changePassword = asyncHandler(async (req, res) => {
   }
 
   // check newPassword and current password should not same
-  if(currentPassword === newPassword){
-    throw new ApiError(400, "please provide unique new password")
+  if (currentPassword === newPassword) {
+    throw new ApiError(400, "please provide unique new password");
   }
 
   // find user with userId using middleware
@@ -212,8 +222,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     // return response
     return res
       .status(200)
-      .cookie("accessToken", accessToken, getAccessTokenOptions)
-      .cookie("refreshToken", refreshToken, getRefreshTokenOptions)
+      .cookie("accessToken", accessToken, getAccessTokenOptions())
+      .cookie("refreshToken", refreshToken, getRefreshTokenOptions())
       .json(new ApiResponse(200, {}, "Access token refreshed !!"));
   } catch (error) {
     throw new ApiError(500, "Internal server error");
@@ -275,13 +285,15 @@ const uploadAvatar = asyncHandler(async (req, res) => {
   }
 
   // 4️⃣ Response
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      { avatar: user.avatar },
-      "Avatar updated successfully"
-    )
-  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { avatar: user.avatar },
+        "Avatar updated successfully"
+      )
+    );
 });
 const updateAvatar = asyncHandler(async (req, res) => {
   const user = req.user;
@@ -331,7 +343,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
 });
 const deleteAvatar = asyncHandler(async (req, res) => {
   // comming from middleware
-  const user = req.user; 
+  const user = req.user;
 
   // Check if avatar exists
   if (!user.avatar?.public_id) {

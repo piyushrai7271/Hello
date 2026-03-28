@@ -1,3 +1,4 @@
+// access token options
 const getAccessTokenOptions = () => {
   const isProduction = process.env.NODE_ENV === "production";
 
@@ -9,6 +10,7 @@ const getAccessTokenOptions = () => {
   };
 };
 
+// refresh token options
 const getRefreshTokenOptions = () => {
   const isProduction = process.env.NODE_ENV === "production";
 
