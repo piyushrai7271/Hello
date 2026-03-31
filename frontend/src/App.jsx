@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Chat from "./pages/Chat";
 import ProtectedRoute from "./routes/ProtectedRoutes.jsx";
+import ChatLayout from "./components/chat/ChatLayout.jsx";
 
 function App() {
   return (
@@ -17,7 +17,7 @@ function App() {
           path="/chat"
           element={
             <ProtectedRoute>
-              <Chat />
+              <ChatLayout />
             </ProtectedRoute>
           }
         />

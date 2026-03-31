@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/api";
+import {connectSocket} from "../socket/socket.js";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ const Login = () => {
     });
 
     if (res.success) {
+      connectSocket(); // ✅ CONNECT HERE
       navigate("/chat");
     } else {
       alert(res.message);
