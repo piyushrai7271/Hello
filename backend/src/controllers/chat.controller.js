@@ -3,6 +3,7 @@ import Chat from "../models/chat.model.js";
 import { asyncHandler } from "../middlewares/error.middleware.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import mongoose from "mongoose";
 
 const getChatMessages = asyncHandler(async (req, res) => {
   const { chatId } = req.params;
@@ -30,7 +31,7 @@ const getChatMessages = asyncHandler(async (req, res) => {
 
   // 4 Fetch messages
   const messages = await Message.find({ chatId })
-    .select("senderId message createdAt") // only needed fields
+    .select("senderId message messageType fileUrl createdAt") // only needed fields
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -39,8 +40,15 @@ const getChatMessages = asyncHandler(async (req, res) => {
   // 5 Total count (optional but pro-level)
   const totalMessages = await Message.countDocuments({ chatId });
 
-  // 6 Reverse for UI (old → new)
-  const formattedMessages = messages.reverse();
+  // 6 Normalize for frontend
+  const formattedMessages = messages.reverse().map((msg) => ({
+    messageId: msg._id,
+    message: msg.message,
+    messageType: msg.messageType || "text",
+    fileUrl: msg.fileUrl || "",
+    fromUserId: msg.senderId?._id?.toString() || msg.senderId.toString(),
+    createdAt: msg.createdAt,
+  }));
 
   // 7 Response
   return res.status(200).json(
@@ -218,9 +226,4 @@ const uploadMessageFile = asyncHandler(async (req, res) => {
   );
 });
 
-export { 
-  getChatMessages, 
-  getUserChats, 
-  createNewChat, 
-  uploadMessageFile 
-};
+export { getChatMessages, getUserChats, createNewChat, uploadMessageFile };

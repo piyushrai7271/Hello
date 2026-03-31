@@ -238,6 +238,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
+        _id:user._id,
         fullName: user.fullName,
         email: user.email,
         mobileNumber: user.mobileNumber,
@@ -366,7 +367,13 @@ const deleteAvatar = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "Avatar deleted successfully"));
 });
+const getAllUsers = asyncHandler(async(req,res) =>{
+  const users = await User.find().select("fullName email avatar");
 
+  return res.status(200).json(
+    new ApiResponse(200,users,"Users fetched successfully")
+  )
+})
 export {
   registerUser,
   loginUser,
@@ -377,4 +384,5 @@ export {
   uploadAvatar,
   updateAvatar,
   deleteAvatar,
+  getAllUsers,
 };
