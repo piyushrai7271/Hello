@@ -12,7 +12,6 @@ const ChatWindow = ({
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  // ✅ NEW STATES
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState(null);
 
@@ -25,7 +24,7 @@ const ChatWindow = ({
   }, [messages]);
 
   // =========================
-  // ✅ CHECK USER STATUS
+  // ✅ USER STATUS
   // =========================
   useEffect(() => {
     if (!socket || !selectedChat) return;
@@ -42,9 +41,7 @@ const ChatWindow = ({
     });
 
     socket.on("user-online", ({ userId: id }) => {
-      if (id === userId) {
-        setIsOnline(true);
-      }
+      if (id === userId) setIsOnline(true);
     });
 
     socket.on("user-offline", ({ userId: id, lastSeen }) => {
@@ -62,24 +59,53 @@ const ChatWindow = ({
   }, [socket, selectedChat]);
 
   // =========================
-  // ✅ LISTEN TYPING EVENTS
+  // ✅ TYPING EVENTS
   // =========================
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("user-typing", () => {
-      setIsTyping(true);
-    });
-
-    socket.on("user-stop-typing", () => {
-      setIsTyping(false);
-    });
+    socket.on("user-typing", () => setIsTyping(true));
+    socket.on("user-stop-typing", () => setIsTyping(false));
 
     return () => {
       socket.off("user-typing");
       socket.off("user-stop-typing");
     };
   }, [socket]);
+
+  // =========================
+  // ✅ DELIVERY + SEEN EVENTS
+  // =========================
+  useEffect(() => {
+    if (!socket) return;
+
+    // ✔✔ delivered
+    socket.on("message-delivered", ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.messageId === messageId
+            ? { ...msg, status: "delivered" }
+            : msg
+        )
+      );
+    });
+
+    // ✔✔ blue seen
+    socket.on("messages-seen", ({ chatId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          String(msg.fromUserId) === String(currentUserId)
+            ? { ...msg, status: "seen" }
+            : msg
+        )
+      );
+    });
+
+    return () => {
+      socket.off("message-delivered");
+      socket.off("messages-seen");
+    };
+  }, [socket, currentUserId, setMessages]);
 
   // =========================
   // SEND MESSAGE
@@ -99,6 +125,7 @@ const ChatWindow = ({
       message: input,
       messageType: "text",
       fromUserId: currentUserId,
+      status: "sent", // ✅ NEW
     };
 
     setMessages((prev) => [...prev, tempMsg]);
@@ -132,6 +159,16 @@ const ChatWindow = ({
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("typing-stop", { toUserId });
     }, 1500);
+  };
+
+  // =========================
+  // TICK UI
+  // =========================
+  const renderTicks = (status) => {
+    if (status === "sent") return "✔";
+    if (status === "delivered") return "✔✔";
+    if (status === "seen") return <span className="text-blue-300">✔✔</span>;
+    return null;
   };
 
   // EMPTY STATE
@@ -177,10 +214,12 @@ const ChatWindow = ({
                     : "bg-white text-black rounded-2xl rounded-bl-none"
                 }`}
               >
+                {/* TEXT */}
                 {msg.messageType === "text" &&
                   msg.message &&
                   msg.message}
 
+                {/* IMAGE */}
                 {msg.messageType === "image" &&
                   msg.fileUrl && (
                     <img
@@ -189,6 +228,7 @@ const ChatWindow = ({
                     />
                   )}
 
+                {/* FILE */}
                 {msg.messageType === "file" &&
                   msg.fileUrl && (
                     <a
@@ -199,6 +239,13 @@ const ChatWindow = ({
                       Download File
                     </a>
                   )}
+
+                {/* ✅ TICKS */}
+                {isMe && (
+                  <div className="text-xs text-right mt-1 opacity-80">
+                    {renderTicks(msg.status)}
+                  </div>
+                )}
               </div>
             </div>
           );
