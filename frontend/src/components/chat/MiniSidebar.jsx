@@ -1,11 +1,18 @@
 import { apiFetch } from "../../api/api.js";
 import { disconnectSocket } from "../../socket/socket.js";
+import {useNavigate} from "react-router-dom";
 
 const MiniSidebar = ({ openUsers }) => {
+ 
+  const navigate = useNavigate();
+
   const handleLogout = async () => {
     await apiFetch("/api/user/logout", { method: "POST" });
+
     disconnectSocket();
-    window.location.href = "/login";
+
+    navigate("/login"); // ✅ correct
+    // window.location.href = "/login";
   };
 
   return (
