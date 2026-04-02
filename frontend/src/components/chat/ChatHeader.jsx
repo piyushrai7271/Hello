@@ -1,6 +1,8 @@
 const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
   if (!selectedChat) return null;
 
+  const user = selectedChat.members[0];
+
   const formatLastSeen = (time) => {
     if (!time) return "Last seen recently";
 
@@ -18,15 +20,25 @@ const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
 
   return (
     <div className="p-4 border-b flex justify-between items-center bg-white shrink-0">
+      
       <div className="flex items-center gap-3">
-        
-        {/* Avatar */}
-        <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
 
+        {/* ✅ AVATAR */}
+        {user?.avatar?.url ? (
+          <img
+            src={user.avatar.url}
+            alt="avatar"
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
+            {user?.fullName?.charAt(0).toUpperCase()}
+          </div>
+        )}
+
+        {/* NAME + STATUS */}
         <div>
-          <p className="font-semibold">
-            {selectedChat.members[0]?.fullName}
-          </p>
+          <p className="font-semibold">{user?.fullName}</p>
 
           <p className="text-xs text-gray-500">
             {isTyping

@@ -6,29 +6,34 @@ import MiniSidebar from "./MiniSidebar.jsx";
 import ChatSidebar from "./ChatSidebar.jsx";
 import ChatWindow from "./ChatWindow.jsx";
 import UserModal from "./UserModal.jsx";
+import ProfilePanel from "./ProfilePanel.jsx"; // ✅ NEW
 
 const ChatLayout = () => {
   const [socket, setSocket] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // ✅ FULL USER
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [showUsers, setShowUsers] = useState(false);
+  const [showProfile, setShowProfile] = useState(false); // ✅ NEW
 
+  // SOCKET
   useEffect(() => {
     const s = getSocket();
     if (!s) return;
     setSocket(s);
   }, []);
 
+  // CURRENT USER
   useEffect(() => {
     const getMe = async () => {
       const res = await apiFetch("/api/user/get-user-details");
-      if (res.success) setCurrentUserId(res.data._id);
+      if (res.success) setCurrentUser(res.data);
     };
     getMe();
   }, []);
 
+  // FETCH CHATS
   const fetchChats = async () => {
     const res = await apiFetch("/api/chat/allMessages");
     if (res.success) setChats(res.data.chats);
@@ -38,6 +43,7 @@ const ChatLayout = () => {
     fetchChats();
   }, []);
 
+  // FETCH MESSAGES
   const fetchMessages = async (chatId) => {
     const res = await apiFetch(`/api/chat/messages/${chatId}`);
 
@@ -60,9 +66,11 @@ const ChatLayout = () => {
 
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
+    setShowProfile(false); // ✅ CLOSE PROFILE
     fetchMessages(chat._id);
   };
 
+  // SOCKET LISTENER
   useEffect(() => {
     if (!socket) return;
 
@@ -92,14 +100,25 @@ const ChatLayout = () => {
     <div className="flex h-screen w-full overflow-hidden">
 
       {/* MINI SIDEBAR */}
-      <MiniSidebar openUsers={() => setShowUsers(true)} />
+      <MiniSidebar
+        openUsers={() => setShowUsers(true)}
+        currentUser={currentUser}
+        openProfile={() => setShowProfile(true)}
+      />
 
-      {/* CHAT SIDEBAR */}
+      {/* LEFT PANEL (CHAT OR PROFILE) */}
       <div className="hidden md:flex w-[300px] border-r flex-col min-h-0">
-        <ChatSidebar
-          chats={chats}
-          onSelectChat={handleSelectChat}
-        />
+        {showProfile ? (
+          <ProfilePanel
+            user={currentUser}
+            closeProfile={() => setShowProfile(false)}
+          />
+        ) : (
+          <ChatSidebar
+            chats={chats}
+            onSelectChat={handleSelectChat}
+          />
+        )}
       </div>
 
       {/* CHAT WINDOW */}
@@ -109,7 +128,7 @@ const ChatLayout = () => {
           selectedChat={selectedChat}
           messages={messages}
           setMessages={setMessages}
-          currentUserId={currentUserId}
+          currentUserId={currentUser?._id}
         />
       </div>
 
@@ -118,7 +137,7 @@ const ChatLayout = () => {
         <UserModal
           onClose={() => setShowUsers(false)}
           refreshChats={fetchChats}
-          currentUserId={currentUserId} // Add this
+          currentUserId={currentUser?._id}
         />
       )}
     </div>

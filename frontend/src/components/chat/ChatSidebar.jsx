@@ -9,21 +9,42 @@ const ChatSidebar = ({ chats, onSelectChat }) => {
 
       {/* CHAT LIST */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {chats.map((chat) => (
-          <div
-            key={chat._id}
-            onClick={() => onSelectChat(chat)}
-            className="p-4 cursor-pointer hover:bg-gray-100 border-b transition"
-          >
-            <p className="font-medium">
-              {chat.members[0]?.fullName}
-            </p>
+        {chats.map((chat) => {
+          const user = chat.members[0];
 
-            <p className="text-sm text-gray-500 truncate">
-              {chat.lastMessage?.message}
-            </p>
-          </div>
-        ))}
+          return (
+            <div
+              key={chat._id}
+              onClick={() => onSelectChat(chat)}
+              className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-100 border-b transition"
+            >
+              
+              {/* ✅ AVATAR */}
+              {user?.avatar?.url ? (
+                <img
+                  src={user.avatar.url}
+                  alt="avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
+                  {user?.fullName?.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              {/* TEXT */}
+              <div className="flex-1">
+                <p className="font-medium">
+                  {user?.fullName}
+                </p>
+
+                <p className="text-sm text-gray-500 truncate">
+                  {chat.lastMessage?.message || "No messages yet"}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
