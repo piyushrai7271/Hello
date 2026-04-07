@@ -24,6 +24,50 @@ const ChatWindow = ({
   const otherUserId = selectedChat?.members?.[0]?._id;
   const userStatus = userStatusMap?.[otherUserId] || {};
 
+  // =========================
+  // ✅ NEW: MESSAGE RENDERER
+  // =========================
+  const renderMessageContent = (msg) => {
+    if (msg.messageType === "image") {
+      return (
+        <img
+          src={msg.fileUrl}
+          alt="img"
+          className="max-w-[200px] rounded-lg mt-1"
+        />
+      );
+    }
+
+    if (msg.messageType === "video") {
+      return (
+        <video
+          src={msg.fileUrl}
+          controls
+          className="max-w-[200px] rounded-lg mt-1"
+        />
+      );
+    }
+
+    if (msg.messageType === "audio") {
+      return <audio src={msg.fileUrl} controls className="mt-1" />;
+    }
+
+    if (msg.messageType === "file") {
+      return (
+        <a
+          href={msg.fileUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="underline text-blue-200 mt-1 block"
+        >
+          📄 Open File
+        </a>
+      );
+    }
+
+    return <span>{msg.message}</span>;
+  };
+
   // AUTO SCROLL
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,21 +81,17 @@ const ChatWindow = ({
   }, []);
 
   // =========================
-  // ✅ TYPING LISTENER
+  // TYPING
   // =========================
   useEffect(() => {
     if (!socket || !selectedChat) return;
 
     const handleTyping = ({ userId }) => {
-      if (userId === otherUserId) {
-        setIsTyping(true);
-      }
+      if (userId === otherUserId) setIsTyping(true);
     };
 
     const handleStopTyping = ({ userId }) => {
-      if (userId === otherUserId) {
-        setIsTyping(false);
-      }
+      if (userId === otherUserId) setIsTyping(false);
     };
 
     socket.on("user-typing", handleTyping);
@@ -72,7 +112,7 @@ const ChatWindow = ({
     socket.on("message-deleted", ({ messageId, type }) => {
       if (type === "delete-for-me") {
         setMessages((prev) =>
-          prev.filter((msg) => msg.messageId !== messageId),
+          prev.filter((msg) => msg.messageId !== messageId)
         );
       }
 
@@ -85,8 +125,8 @@ const ChatWindow = ({
                   message: "This message was deleted",
                   isDeleted: true,
                 }
-              : msg,
-          ),
+              : msg
+          )
         );
       }
     });
@@ -105,25 +145,21 @@ const ChatWindow = ({
         prev.map((msg) =>
           msg.messageId === messageId
             ? { ...msg, message: newMessage, isEdited }
-            : msg,
-        ),
+            : msg
+        )
       );
     });
 
     return () => socket.off("message-edited");
   }, [socket]);
 
-  // =========================
   // DELETE
-  // =========================
   const handleDelete = (messageId, type) => {
     socket.emit("delete-message", { messageId, type });
     setActiveMenu(null);
   };
 
-  // =========================
   // EDIT
-  // =========================
   const handleEditStart = (msg) => {
     setEditingMsgId(msg.messageId);
     setEditText(msg.message);
@@ -142,15 +178,11 @@ const ChatWindow = ({
     setEditText("");
   };
 
-  // =========================
-  // ✅ FIXED SEND MESSAGE (NO DUPLICATE)
-  // =========================
+  // SEND
   const handleSend = () => {
     if (!input.trim() || !selectedChat || !socket) return;
 
     const toUserId = selectedChat.members[0]._id;
-
-    // ❌ REMOVED TEMP MESSAGE (THIS CAUSED DUPLICATE)
 
     socket.emit("private-message", {
       toUserId,
@@ -170,7 +202,6 @@ const ChatWindow = ({
 
   return (
     <div className="flex flex-col h-full w-full">
-      {/* HEADER */}
       <ChatHeader
         selectedChat={selectedChat}
         isOnline={userStatus.isOnline}
@@ -178,7 +209,6 @@ const ChatWindow = ({
         isTyping={isTyping}
       />
 
-      {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 bg-[#f1f5f9]">
         {messages.map((msg, i) => {
           const isMe = String(msg.fromUserId) === String(currentUserId);
@@ -186,7 +216,9 @@ const ChatWindow = ({
           return (
             <div
               key={msg.messageId || i}
-              className={`mb-4 flex ${isMe ? "justify-end" : "justify-start"}`}
+              className={`mb-4 flex ${
+                isMe ? "justify-end" : "justify-start"
+              }`}
             >
               <div className="relative group">
                 <div
@@ -212,14 +244,14 @@ const ChatWindow = ({
                       <div className="flex justify-end gap-2 mt-2">
                         <button
                           onClick={() => setEditingMsgId(null)}
-                          className="px-3 text-black py-1 text-xs rounded-md bg-gray-200 hover:bg-gray-300 transition"
+                          className="px-3 text-black py-1 text-xs rounded-md bg-gray-200"
                         >
                           Cancel
                         </button>
 
                         <button
                           onClick={() => handleEditSave(msg.messageId)}
-                          className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm"
+                          className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white"
                         >
                           Save
                         </button>
@@ -227,7 +259,7 @@ const ChatWindow = ({
                     </div>
                   ) : (
                     <>
-                      {msg.message}
+                      {renderMessageContent(msg)}
                       {msg.isEdited && (
                         <span className="text-[10px] ml-1 opacity-70">
                           (edited)
@@ -242,7 +274,7 @@ const ChatWindow = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       setActiveMenu((prev) =>
-                        prev === msg.messageId ? null : msg.messageId,
+                        prev === msg.messageId ? null : msg.messageId
                       );
                     }}
                     className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-xs bg-white rounded-full px-1 shadow"
@@ -265,7 +297,6 @@ const ChatWindow = ({
         <div ref={bottomRef}></div>
       </div>
 
-      {/* INPUT */}
       <MessageInput
         input={input}
         setInput={setInput}
