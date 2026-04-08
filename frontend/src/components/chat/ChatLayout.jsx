@@ -18,8 +18,6 @@ const ChatLayout = () => {
   const [showProfile, setShowProfile] = useState(false);
 
   const [userStatusMap, setUserStatusMap] = useState({});
-
-  // ✅ NEW: GLOBAL TYPING STATE
   const [typingUsers, setTypingUsers] = useState({});
 
   // SOCKET
@@ -65,26 +63,45 @@ const ChatLayout = () => {
       }));
 
       setMessages(normalized);
+
+      // ✅ mark as seen
       socket?.emit("mark-as-seen", { chatId });
     }
   };
 
+  // =========================
+  // ✅ UPDATED: SELECT CHAT
+  // =========================
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
     setShowProfile(false);
+
+    // 🔥 RESET UNREAD COUNT (IMPORTANT FIX)
+    setChats((prev) =>
+      prev.map((c) =>
+        c._id === chat._id
+          ? { ...c, unreadCount: 0 }
+          : c
+      )
+    );
+
     fetchMessages(chat._id);
 
     const otherUserId = chat.members[0]._id;
     socket?.emit("check-user-status", { userId: otherUserId });
+
+    // ✅ ensure seen trigger
+    socket?.emit("mark-as-seen", { chatId: chat._id });
   };
 
   // =========================
-  // MESSAGE LISTENER
+  // ✅ UPDATED: MESSAGE LISTENER
   // =========================
   useEffect(() => {
     if (!socket) return;
 
     const handleMessage = (data) => {
+      // ✅ if current chat is open → show message
       if (data.chatId === selectedChat?._id) {
         setMessages((prev) => {
           const exists = prev.some(
@@ -93,8 +110,24 @@ const ChatLayout = () => {
           if (exists) return prev;
           return [...prev, data];
         });
+
+        // ✅ mark seen instantly
+        socket.emit("mark-as-seen", { chatId: data.chatId });
+      } else {
+        // 🔥 INCREMENT UNREAD COUNT
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat._id === data.chatId
+              ? {
+                  ...chat,
+                  unreadCount: (chat.unreadCount || 0) + 1,
+                }
+              : chat
+          )
+        );
       }
 
+      // OPTIONAL: keep last message fresh
       fetchChats();
     };
 
@@ -145,7 +178,7 @@ const ChatLayout = () => {
   }, [socket]);
 
   // =========================
-  // ✅ NEW: TYPING LISTENERS
+  // TYPING LISTENERS
   // =========================
   useEffect(() => {
     if (!socket) return;
@@ -194,7 +227,7 @@ const ChatLayout = () => {
           <ChatSidebar
             chats={chats}
             onSelectChat={handleSelectChat}
-            typingUsers={typingUsers} // ✅ NEW
+            typingUsers={typingUsers}
           />
         )}
       </div>

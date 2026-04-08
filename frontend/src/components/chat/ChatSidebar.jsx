@@ -16,7 +16,7 @@ const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
   };
 
   const renderLastMessage = (msg, isTyping) => {
-    if (isTyping) return "Typing..."; // ✅ NEW
+    if (isTyping) return "Typing...";
 
     if (!msg) return "No messages yet";
 
@@ -42,8 +42,7 @@ const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
         {chats.map((chat) => {
           const user = chat.members[0];
           const lastMsg = chat.lastMessage;
-
-          const isTyping = typingUsers[user?._id]; // ✅ NEW
+          const isTyping = typingUsers[user?._id];
 
           return (
             <div
@@ -76,6 +75,13 @@ const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
                   )}
                 </p>
               </div>
+
+              {/* ✅ UNREAD BADGE */}
+              {chat.unreadCount > 0 && (
+                <div className="bg-green-500 text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full px-2">
+                  {chat.unreadCount}
+                </div>
+              )}
             </div>
           );
         })}
