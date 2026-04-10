@@ -30,6 +30,6 @@ router.post("/addAvatar", jwtValidation, upload.single("avatar"), uploadAvatar);
 router.put("/updateAvatar",jwtValidation,upload.single("avatar"),updateAvatar);
 router.delete("/deleteAvatar", jwtValidation, deleteAvatar);
 router.put("/update-profile",jwtValidation,updateProfileDetails);
-router.get("/all-users",getAllUsers);
+router.get("/all-users",jwtValidation,getAllUsers);
 
 export default router;

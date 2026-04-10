@@ -412,13 +412,35 @@ const updateProfileDetails = asyncHandler(async (req, res) => {
     new ApiResponse(200, updatedUser, "Profile updated successfully")
   );
 });
-const getAllUsers = asyncHandler(async(req,res) =>{
-  const users = await User.find().select("fullName email avatar");
+const getAllUsers = asyncHandler(async (req, res) => {
+  const { search = "", page = 1, limit = 20 } = req.query;
+
+  const skip = (page - 1) * limit;
+
+  const query = {
+    fullName: { $regex: search, $options: "i" },
+  };
+
+  const users = await User.find(query)
+    .select("fullName email avatar")
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const total = await User.countDocuments(query);
 
   return res.status(200).json(
-    new ApiResponse(200,users,"Users fetched successfully")
-  )
-})
+    new ApiResponse(
+      200,
+      {
+        users,
+        total,
+        page: parseInt(page),
+        hasMore: skip + users.length < total, // ✅ important for frontend
+      },
+      "Users fetched successfully"
+    )
+  );
+});
 
 export {
   registerUser,
