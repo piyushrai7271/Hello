@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/api";
+import toast from "react-hot-toast";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -21,9 +22,11 @@ const Register = () => {
     });
 
     if (res.success) {
+      toast.success("Account created successfully 🎉");
       navigate("/login");
     } else {
-      alert(res.message);
+      // ✅ FIX: show backend error
+      toast.error(res.message);
     }
   };
 

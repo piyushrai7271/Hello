@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiFetch } from "../../api/api";
+import toast from "react-hot-toast";
 
 const EditProfileModal = ({ user, onClose, setUser }) => {
   const [fullName, setFullName] = useState(user.fullName);
@@ -10,20 +11,32 @@ const EditProfileModal = ({ user, onClose, setUser }) => {
   const handleSave = async () => {
     if (loading) return;
 
-    setLoading(true);
+    // ✅ optional validation
+    if (!fullName.trim()) {
+      toast.error("Full name is required");
+      return;
+    }
 
-    const res = await apiFetch("/api/user/update-profile", {
-      method: "PUT",
-      body: JSON.stringify({ fullName, bio, gender }),
-    });
+    try {
+      setLoading(true);
 
-    setLoading(false);
+      const res = await apiFetch("/api/user/update-profile", {
+        method: "PUT",
+        body: JSON.stringify({ fullName, bio, gender }),
+      });
 
-    if (res.success) {
-      setUser(res.data); // ✅ INSTANT UI UPDATE
-      onClose();
-    } else {
-      alert(res.message || "Error updating profile");
+      if (res.success) {
+        setUser(res.data); // ✅ instant UI update
+        toast.success("Profile updated successfully 🎉");
+        onClose();
+      } else {
+        toast.error(res.message || "Error updating profile ❌");
+      }
+
+    } catch (error) {
+      toast.error("Something went wrong ❌");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,14 +69,16 @@ const EditProfileModal = ({ user, onClose, setUser }) => {
         </select>
 
         <div className="flex justify-end gap-2 mt-3">
-          <button onClick={onClose}>Cancel</button>
+          <button onClick={onClose} disabled={loading}>
+            Cancel
+          </button>
 
           <button
             onClick={handleSave}
             disabled={loading}
             className={`px-4 py-1 rounded text-white ${
               loading
-                ? "bg-gray-400"
+                ? "bg-gray-400 cursor-not-allowed"
                 : "bg-blue-500 hover:bg-blue-600"
             }`}
           >

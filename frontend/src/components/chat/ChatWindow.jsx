@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import MessageInput from "./MessageInput.jsx";
 import ChatHeader from "./ChatHeader.jsx";
 import MessageMenu from "./MessageMenu.jsx";
+import toast from "react-hot-toast"; // ✅ NEW
 
 const ChatWindow = ({
   socket,
@@ -25,7 +26,7 @@ const ChatWindow = ({
   const userStatus = userStatusMap?.[otherUserId] || {};
 
   // =========================
-  // ✅ NEW: MESSAGE RENDERER
+  // MESSAGE RENDERER
   // =========================
   const renderMessageContent = (msg) => {
     if (msg.messageType === "image") {
@@ -112,7 +113,7 @@ const ChatWindow = ({
     socket.on("message-deleted", ({ messageId, type }) => {
       if (type === "delete-for-me") {
         setMessages((prev) =>
-          prev.filter((msg) => msg.messageId !== messageId)
+          prev.filter((msg) => msg.messageId !== messageId),
         );
       }
 
@@ -125,8 +126,8 @@ const ChatWindow = ({
                   message: "This message was deleted",
                   isDeleted: true,
                 }
-              : msg
-          )
+              : msg,
+          ),
         );
       }
     });
@@ -145,21 +146,35 @@ const ChatWindow = ({
         prev.map((msg) =>
           msg.messageId === messageId
             ? { ...msg, message: newMessage, isEdited }
-            : msg
-        )
+            : msg,
+        ),
       );
     });
 
     return () => socket.off("message-edited");
   }, [socket]);
 
+  // =========================
   // DELETE
+  // =========================
   const handleDelete = (messageId, type) => {
-    socket.emit("delete-message", { messageId, type });
+    if (!socket) {
+      toast.error("Connection lost ❌");
+      return;
+    }
+
+    try {
+      socket.emit("delete-message", { messageId, type });
+    } catch {
+      toast.error("Failed to delete message ❌");
+    }
+
     setActiveMenu(null);
   };
 
+  // =========================
   // EDIT
+  // =========================
   const handleEditStart = (msg) => {
     setEditingMsgId(msg.messageId);
     setEditText(msg.message);
@@ -169,25 +184,46 @@ const ChatWindow = ({
   const handleEditSave = (messageId) => {
     if (!editText.trim()) return;
 
-    socket.emit("edit-message", {
-      messageId,
-      newMessage: editText,
-    });
+    if (!socket) {
+      toast.error("Connection lost ❌");
+      return;
+    }
+
+    try {
+      socket.emit("edit-message", {
+        messageId,
+        newMessage: editText,
+      });
+    } catch {
+      toast.error("Failed to edit message ❌");
+    }
 
     setEditingMsgId(null);
     setEditText("");
   };
 
+  // =========================
   // SEND
+  // =========================
   const handleSend = () => {
-    if (!input.trim() || !selectedChat || !socket) return;
+    if (!input.trim() || !selectedChat) return;
+
+    if (!socket) {
+      toast.error("Connection lost ❌");
+      return;
+    }
 
     const toUserId = selectedChat.members[0]._id;
 
-    socket.emit("private-message", {
-      toUserId,
-      message: input,
-    });
+    try {
+      socket.emit("private-message", {
+        toUserId,
+        message: input,
+      });
+    } catch {
+      toast.error("Message failed to send ❌");
+      return;
+    }
 
     setInput("");
   };
@@ -216,9 +252,7 @@ const ChatWindow = ({
           return (
             <div
               key={msg.messageId || i}
-              className={`mb-4 flex ${
-                isMe ? "justify-end" : "justify-start"
-              }`}
+              className={`mb-4 flex ${isMe ? "justify-end" : "justify-start"}`}
             >
               <div className="relative group">
                 <div
@@ -274,7 +308,7 @@ const ChatWindow = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       setActiveMenu((prev) =>
-                        prev === msg.messageId ? null : msg.messageId
+                        prev === msg.messageId ? null : msg.messageId,
                       );
                     }}
                     className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-xs bg-white rounded-full px-1 shadow"
@@ -288,6 +322,8 @@ const ChatWindow = ({
                   messageId={msg.messageId}
                   onDelete={handleDelete}
                   onEdit={() => handleEditStart(msg)}
+                  messageType={msg.messageType} // ✅ NEW
+                  isDeleted={msg.isDeleted} // ✅ NEW
                 />
               </div>
             </div>

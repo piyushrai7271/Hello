@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { apiFetch } from "../../api/api";
+import toast from "react-hot-toast";
 
 const AvatarActions = ({ onClose, setUser }) => {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const handleDelete = async () => {
     try {
@@ -19,9 +19,13 @@ const AvatarActions = ({ onClose, setUser }) => {
           avatar: { url: "", public_id: "" },
         }));
 
-        setMessage("✅ Avatar deleted");
+        toast.success("Avatar deleted ✅");
         setTimeout(onClose, 800);
+      } else {
+        toast.error(res.message || "Failed to delete avatar ❌");
       }
+    } catch (error) {
+      toast.error("Something went wrong ❌");
     } finally {
       setLoading(false);
     }
@@ -54,9 +58,13 @@ const AvatarActions = ({ onClose, setUser }) => {
           avatar: data.data.avatar,
         }));
 
-        setMessage("✅ Avatar updated");
+        toast.success("Avatar updated 🎉");
         setTimeout(onClose, 800);
+      } else {
+        toast.error(data.message || "Failed to update avatar ❌");
       }
+    } catch (error) {
+      toast.error("Upload failed ❌");
     } finally {
       setLoading(false);
     }
@@ -75,12 +83,11 @@ const AvatarActions = ({ onClose, setUser }) => {
 
         <button
           onClick={handleDelete}
-          className="p-2 border rounded text-red-500"
+          disabled={loading}
+          className="p-2 border rounded text-red-500 disabled:opacity-50"
         >
           Delete Avatar
         </button>
-
-        {message && <p className="text-sm text-center">{message}</p>}
 
         <button onClick={onClose}>Cancel</button>
       </div>

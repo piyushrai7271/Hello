@@ -13,6 +13,7 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
   return (
     <div className="flex flex-col h-full bg-white relative">
 
+      {/* HEADER */}
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="font-semibold text-2xl">Profile</h2>
         <button onClick={closeProfile}>✕</button>
@@ -50,8 +51,10 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
           {user.bio || "No bio added"}
         </p>
 
+        {/* ACTION BUTTONS */}
         <div className="w-full mt-4 flex flex-col gap-3">
 
+          {/* ❌ NO TOAST HERE */}
           <button
             onClick={() => setShowPasswordModal(true)}
             className="p-2 border rounded-lg hover:bg-gray-200"
@@ -59,6 +62,7 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
             Change Password
           </button>
 
+          {/* ❌ NO TOAST HERE */}
           <button
             onClick={() => setShowEditModal(true)}
             className="p-2 border rounded-lg hover:bg-gray-200"
@@ -70,10 +74,11 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
       </div>
 
       {/* MODALS */}
+
       {showAvatarActions && (
         <AvatarActions
           onClose={() => setShowAvatarActions(false)}
-          setUser={setUser} // ✅ IMPORTANT
+          setUser={setUser}
         />
       )}
 
@@ -86,7 +91,7 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
       {showEditModal && (
         <EditProfileModal
           user={user}
-          setUser={setUser} // ✅ IMPORTANT
+          setUser={setUser}
           onClose={() => setShowEditModal(false)}
         />
       )}

@@ -1,3 +1,5 @@
+import toast from "react-hot-toast";
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // 🔁 refresh token helper
@@ -9,7 +11,7 @@ const refreshToken = async () => {
     });
 
     const data = await res.json();
-    return data.success;
+    return data?.success;
   } catch (error) {
     console.error("Refresh Token Error:", error);
     return false;
@@ -29,52 +31,63 @@ export const apiFetch = async (endpoint, options = {}, retry = true) => {
       ...options,
     });
 
-    // 🔥 If token expired → try refresh
-    if (res.status === 401 && retry) {
+    let data;
+
+    try {
+      data = await res.json();
+    } catch {
+      return {
+        success: false,
+        message: "Invalid server response",
+        data: null,
+      };
+    }
+
+    // 🔥 ✅ FIX: Only refresh if it's NOT login request
+    if (
+      res.status === 401 &&
+      retry &&
+      !endpoint.includes("/login")
+    ) {
       const refreshed = await refreshToken();
 
       if (refreshed) {
-        // 🔁 retry original request (only once)
         return apiFetch(endpoint, options, false);
       } else {
-        // ❌ refresh failed → logout
+        toast.error("Session expired. Please login again.");
         window.location.href = "/login";
-        return { success: false };
+
+        return {
+          success: false,
+          message: "Session expired. Please login again.",
+          data: null,
+        };
       }
     }
 
-    const data = await res.json();
-    return data;
+    // ✅ SUCCESS CASE
+    if (res.ok) {
+      return {
+        success: data?.success !== false,
+        message: data?.message || "Success",
+        data: data?.data || data,
+      };
+    }
+
+    // ❌ ERROR CASE (like wrong password)
+    return {
+      success: false,
+      message: data?.message || "Something went wrong",
+      data: null,
+    };
 
   } catch (error) {
     console.error("API Error:", error);
-    return { success: false };
+
+    return {
+      success: false,
+      message: "Network error. Please check your connection.",
+      data: null,
+    };
   }
 };
-
-
-
-
-
-
-
-// const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// export const apiFetch = async (endpoint, options = {}) => {
-//   try {
-//     const res = await fetch(`${BASE_URL}${endpoint}`, {
-//       credentials: "include",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       ...options,
-//     });
-
-//     const data = await res.json();
-
-//     return data;
-//   } catch (error) {
-//     console.error("API Error:", error);
-//     return { success: false };
-//   }
-// };
