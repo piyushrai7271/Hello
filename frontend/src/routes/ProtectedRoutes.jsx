@@ -7,11 +7,11 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const res = await apiFetch("/api/user/get-user-details");
-        if (res.success) setIsAuth(true);
-        else setIsAuth(false);
-      } catch {
+      const res = await apiFetch("/api/user/get-user-details");
+
+      if (res.success) {
+        setIsAuth(true);
+      } else {
         setIsAuth(false);
       }
     };
@@ -19,13 +19,16 @@ const ProtectedRoute = ({ children }) => {
     checkAuth();
   }, []);
 
+  // ✅ LOADING STATE
   if (isAuth === null) {
-  return (
-    <div className="h-screen flex items-center justify-center">
-      <p className="text-gray-500">Checking authentication...</p>
-    </div>
-  );
-}
+    return (
+      <div className="h-screen flex flex-col items-center justify-center gap-2">
+        <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+        <p className="text-gray-500 text-sm">Checking authentication...</p>
+      </div>
+    );
+  }
+
   return isAuth ? children : <Navigate to="/login" />;
 };
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { apiFetch } from "../../api/api.js";
+import toast from "react-hot-toast";
 
 const UserModal = ({ onClose, refreshChats, currentUserId }) => {
   const [users, setUsers] = useState([]);
@@ -19,20 +20,28 @@ const UserModal = ({ onClose, refreshChats, currentUserId }) => {
       setLoading(true);
 
       const res = await apiFetch(
-        `/api/user/all-users?search=${searchText}&page=${pageNum}&limit=20`
+        `/api/user/all-users?search=${searchText}&page=${pageNum}&limit=20`,
       );
 
       if (res.success) {
         const filteredUsers = res.data.users.filter(
-          (user) => String(user._id) !== String(currentUserId)
+          (user) => String(user._id) !== String(currentUserId),
         );
 
         setUsers((prev) =>
-          reset ? filteredUsers : [...prev, ...filteredUsers]
+          reset ? filteredUsers : [...prev, ...filteredUsers],
         );
 
         setHasMore(res.data.hasMore);
+
+        toast.dismiss(); // ✅ stop loader
+      } else {
+        toast.dismiss();
+        toast.error(res.message || "Failed to load users ❌");
       }
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Something went wrong ❌");
     } finally {
       setLoading(false);
     }
@@ -81,17 +90,18 @@ const UserModal = ({ onClose, refreshChats, currentUserId }) => {
     });
 
     if (res.success) {
+      toast.success("Chat created 🎉");
       refreshChats();
       onClose();
+    } else {
+      toast.error(res.message || "Failed to create chat ❌");
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
-      
       {/* MODAL BOX */}
       <div className="w-full max-w-md h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
-        
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-indigo-500 to-blue-500 text-white">
           <h2 className="font-semibold text-lg">Start New Chat</h2>
@@ -119,9 +129,7 @@ const UserModal = ({ onClose, refreshChats, currentUserId }) => {
         >
           {/* ✅ LOADER */}
           {loading && users.length === 0 && (
-            <p className="text-center text-gray-500 mt-4">
-              Loading users...
-            </p>
+            <p className="text-center text-gray-500 mt-4">Loading users...</p>
           )}
 
           {/* ✅ NO RESULT */}
@@ -159,9 +167,7 @@ const UserModal = ({ onClose, refreshChats, currentUserId }) => {
 
           {/* ✅ LOAD MORE INDICATOR */}
           {loading && users.length > 0 && (
-            <p className="text-center text-gray-400 py-2">
-              Loading more...
-            </p>
+            <p className="text-center text-gray-400 py-2">Loading more...</p>
           )}
         </div>
 

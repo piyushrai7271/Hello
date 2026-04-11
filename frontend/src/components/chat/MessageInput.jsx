@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   const fileRef = useRef();
@@ -13,6 +14,8 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
     const file = e.target.files[0];
     if (!file || !selectedChat) return;
 
+    const toastId = toast.loading("Uploading file..."); // ✅ FIX
+
     try {
       setUploading(true);
 
@@ -25,23 +28,25 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
           method: "POST",
           body: formData,
           credentials: "include",
-        }
+        },
       );
 
       const data = await res.json();
 
       if (data.success) {
+        toast.success("File sent 📤", { id: toastId }); // ✅ update same toast
+
         socket.emit("private-message", {
           toUserId: selectedChat.members[0]._id,
           messageType: data.data.messageType,
           fileUrl: data.data.fileUrl,
         });
       } else {
-        alert("Upload failed");
+        toast.error("Upload failed ❌", { id: toastId });
       }
     } catch (error) {
       console.error("Upload Error:", error);
-      alert("Something went wrong");
+      toast.error("Something went wrong ❌", { id: toastId });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -104,15 +109,12 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
 
   return (
     <div className="relative p-3 border-t flex gap-2 shrink-0">
-
       {/* ➕ BUTTON */}
       <button
         onClick={() => setShowMenu((prev) => !prev)}
         disabled={uploading}
         className={`text-xl transition ${
-          uploading
-            ? "opacity-50 cursor-not-allowed"
-            : "hover:text-blue-500"
+          uploading ? "opacity-50 cursor-not-allowed" : "hover:text-blue-500"
         }`}
       >
         {uploading ? "⏳" : "➕"}
@@ -121,7 +123,6 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
       {/* 📂 MENU */}
       {showMenu && (
         <div className="absolute bottom-14 left-3 bg-white shadow-lg rounded-xl p-2 w-48 z-50 animate-fadeIn">
-
           <div
             onClick={() => handleSelectType("media")}
             className="p-2 hover:bg-gray-100 cursor-pointer rounded"
@@ -146,12 +147,7 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
       )}
 
       {/* FILE INPUT */}
-      <input
-        type="file"
-        hidden
-        ref={fileRef}
-        onChange={handleFile}
-      />
+      <input type="file" hidden ref={fileRef} onChange={handleFile} />
 
       {/* TEXT INPUT */}
       <input

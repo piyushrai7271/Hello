@@ -1,14 +1,19 @@
 import { apiFetch } from "../../api/api.js";
 import { disconnectSocket } from "../../socket/socket.js";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await apiFetch("/api/user/logout", { method: "POST" });
-    disconnectSocket();
-    navigate("/login");
+    const res = await apiFetch("/api/user/logout", { method: "POST" });
+
+    if (res.success) {
+      toast.success("Logged out successfully");
+      disconnectSocket();
+      navigate("/login");
+    }
   };
 
   const renderAvatar = () => {
@@ -75,4 +80,3 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
 };
 
 export default MiniSidebar;
-

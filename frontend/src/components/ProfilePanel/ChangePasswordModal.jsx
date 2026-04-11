@@ -1,36 +1,48 @@
 import { useState } from "react";
 import { apiFetch } from "../../api/api";
+import toast from "react-hot-toast";
 
 const ChangePasswordModal = ({ onClose }) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ NEW
 
   const handleChangePassword = async () => {
+    // ✅ VALIDATION
     if (!currentPassword || !newPassword || !confirmPassword) {
-      alert("Please fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
-    const res = await apiFetch("/api/user/change-password", {
-      method: "POST",
-      body: JSON.stringify({
-        currentPassword,
-        newPassword,
-        confirmPassword,
-      }),
-    });
+    try {
+      setLoading(true);
 
-    if (res.success) {
-      alert("Password changed successfully");
-      onClose();
-    } else {
-      alert(res.message || "Error changing password");
+      const res = await apiFetch("/api/user/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        }),
+      });
+
+      if (res.success) {
+        toast.success("Password changed successfully 🎉");
+        onClose();
+      } else {
+        toast.error(res.message || "Error changing password ❌");
+      }
+
+    } catch (error) {
+      toast.error("Something went wrong ❌");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,13 +78,20 @@ const ChangePasswordModal = ({ onClose }) => {
         />
 
         <div className="flex justify-end gap-2 mt-3">
-          <button onClick={onClose}>Cancel</button>
+          <button onClick={onClose} disabled={loading}>
+            Cancel
+          </button>
 
           <button
             onClick={handleChangePassword}
-            className="bg-blue-500 text-white px-4 py-1 rounded"
+            disabled={loading}
+            className={`px-4 py-1 rounded text-white ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
           >
-            Update
+            {loading ? "Updating..." : "Update"}
           </button>
         </div>
       </div>

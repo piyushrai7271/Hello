@@ -8,9 +8,9 @@ const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
 
     const diff = Math.floor((now - date) / 1000);
 
-    if (diff < 60) return "just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)} min`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} hr`;
+    if (diff < 60) return "now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
 
     return date.toLocaleDateString();
   };
@@ -25,6 +25,7 @@ const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
     }
 
     if (msg.messageType === "image") return "📷 Photo";
+    if (msg.messageType === "video") return "🎥 Video"; // ✅ added
     if (msg.messageType === "file") return "📎 File";
     if (msg.messageType === "audio") return "🎧 Audio";
 
@@ -40,7 +41,7 @@ const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
 
       <div className="flex-1 overflow-y-auto min-h-0">
         {chats.map((chat) => {
-          const user = chat.members[0];
+          const user = chat.members?.[0]; // ✅ safe access
           const lastMsg = chat.lastMessage;
           const isTyping = typingUsers[user?._id];
 
@@ -63,9 +64,13 @@ const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
               )}
 
               <div className="flex-1">
-                <p className="font-medium">{user?.fullName}</p>
+                <p className="font-medium">{user?.fullName || "User"}</p>
 
-                <p className="text-sm text-gray-500 truncate">
+                <p
+                  className={`text-sm truncate ${
+                    isTyping ? "text-green-500 font-medium" : "text-gray-500"
+                  }`}
+                >
                   {renderLastMessage(lastMsg, isTyping)}
 
                   {!isTyping && lastMsg?.createdAt && (

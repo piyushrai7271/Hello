@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getSocket } from "../../socket/socket.js";
 import { apiFetch } from "../../api/api.js";
+import toast from "react-hot-toast";
 
 import MiniSidebar from "./MiniSidebar.jsx";
 import ChatSidebar from "./ChatSidebar.jsx";
@@ -31,7 +32,11 @@ const ChatLayout = () => {
   useEffect(() => {
     const getMe = async () => {
       const res = await apiFetch("/api/user/get-user-details");
-      if (res.success) setCurrentUser(res.data);
+      if (res.success) {
+        setCurrentUser(res.data);
+      } else {
+        toast.error(res.message || "Failed to load user ❌");
+      }
     };
     getMe();
   }, []);
@@ -39,7 +44,11 @@ const ChatLayout = () => {
   // FETCH CHATS
   const fetchChats = async () => {
     const res = await apiFetch("/api/chat/allMessages");
-    if (res.success) setChats(res.data.chats);
+    if (res.success) {
+      setChats(res.data.chats);
+    } else {
+      toast.error(res.message || "Failed to load chats ❌");
+    }
   };
 
   useEffect(() => {
@@ -48,6 +57,7 @@ const ChatLayout = () => {
 
   // FETCH MESSAGES
   const fetchMessages = async (chatId) => {
+    toast.loading("Loading messages...");
     const res = await apiFetch(`/api/chat/messages/${chatId}`);
 
     if (res.success) {
@@ -56,16 +66,16 @@ const ChatLayout = () => {
         message: msg.message,
         messageType: msg.messageType || "text",
         fileUrl: msg.fileUrl || "",
-        fromUserId:
-          msg.fromUserId ||
-          msg.senderId?._id ||
-          msg.senderId,
+        fromUserId: msg.fromUserId || msg.senderId?._id || msg.senderId,
       }));
 
       setMessages(normalized);
 
-      // ✅ mark as seen
       socket?.emit("mark-as-seen", { chatId });
+      toast.dismiss(); // ✅ stop loader
+    } else {
+      toast.dismiss();
+      toast.error(res.message || "Failed to load messages ❌");
     }
   };
 
@@ -78,11 +88,7 @@ const ChatLayout = () => {
 
     // 🔥 RESET UNREAD COUNT (IMPORTANT FIX)
     setChats((prev) =>
-      prev.map((c) =>
-        c._id === chat._id
-          ? { ...c, unreadCount: 0 }
-          : c
-      )
+      prev.map((c) => (c._id === chat._id ? { ...c, unreadCount: 0 } : c)),
     );
 
     fetchMessages(chat._id);
@@ -101,12 +107,15 @@ const ChatLayout = () => {
     if (!socket) return;
 
     const handleMessage = (data) => {
+      if (!data) {
+        toast.error("Message error ❌");
+        return;
+      }
+
       // ✅ if current chat is open → show message
       if (data.chatId === selectedChat?._id) {
         setMessages((prev) => {
-          const exists = prev.some(
-            (msg) => msg.messageId === data.messageId
-          );
+          const exists = prev.some((msg) => msg.messageId === data.messageId);
           if (exists) return prev;
           return [...prev, data];
         });
@@ -122,8 +131,8 @@ const ChatLayout = () => {
                   ...chat,
                   unreadCount: (chat.unreadCount || 0) + 1,
                 }
-              : chat
-          )
+              : chat,
+          ),
         );
       }
 
@@ -209,7 +218,6 @@ const ChatLayout = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-
       <MiniSidebar
         openUsers={() => setShowUsers(true)}
         currentUser={currentUser}
