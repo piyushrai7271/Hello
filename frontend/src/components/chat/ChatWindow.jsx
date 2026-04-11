@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import MessageInput from "./MessageInput.jsx";
 import ChatHeader from "./ChatHeader.jsx";
 import MessageMenu from "./MessageMenu.jsx";
-import toast from "react-hot-toast"; // ✅ NEW
+import toast from "react-hot-toast";
 
 const ChatWindow = ({
   socket,
@@ -25,9 +25,6 @@ const ChatWindow = ({
   const otherUserId = selectedChat?.members?.[0]?._id;
   const userStatus = userStatusMap?.[otherUserId] || {};
 
-  // =========================
-  // MESSAGE RENDERER
-  // =========================
   const renderMessageContent = (msg) => {
     if (msg.messageType === "image") {
       return (
@@ -81,9 +78,7 @@ const ChatWindow = ({
     return () => window.removeEventListener("click", handleClick);
   }, []);
 
-  // =========================
   // TYPING
-  // =========================
   useEffect(() => {
     if (!socket || !selectedChat) return;
 
@@ -104,9 +99,7 @@ const ChatWindow = ({
     };
   }, [socket, selectedChat, otherUserId]);
 
-  // =========================
   // DELETE LISTENER
-  // =========================
   useEffect(() => {
     if (!socket) return;
 
@@ -135,9 +128,7 @@ const ChatWindow = ({
     return () => socket.off("message-deleted");
   }, [socket]);
 
-  // =========================
   // EDIT LISTENER
-  // =========================
   useEffect(() => {
     if (!socket) return;
 
@@ -154,9 +145,6 @@ const ChatWindow = ({
     return () => socket.off("message-edited");
   }, [socket]);
 
-  // =========================
-  // DELETE
-  // =========================
   const handleDelete = (messageId, type) => {
     if (!socket) {
       toast.error("Connection lost ❌");
@@ -172,9 +160,6 @@ const ChatWindow = ({
     setActiveMenu(null);
   };
 
-  // =========================
-  // EDIT
-  // =========================
   const handleEditStart = (msg) => {
     setEditingMsgId(msg.messageId);
     setEditText(msg.message);
@@ -202,9 +187,6 @@ const ChatWindow = ({
     setEditText("");
   };
 
-  // =========================
-  // SEND
-  // =========================
   const handleSend = () => {
     if (!input.trim() || !selectedChat) return;
 
@@ -228,10 +210,12 @@ const ChatWindow = ({
     setInput("");
   };
 
-  if (!selectedChat) {
+  // ✅ UPDATED HERE ONLY
+  if (!selectedChat && messages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
-        Select a chat
+      <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-500">
+        <p className="text-xl mb-2">💬 Welcome!</p>
+        <p className="text-sm">Select a chat or start a new conversation</p>
       </div>
     );
   }
@@ -246,89 +230,99 @@ const ChatWindow = ({
       />
 
       <div className="flex-1 overflow-y-auto p-4 bg-[#f1f5f9]">
-        {messages.map((msg, i) => {
-          const isMe = String(msg.fromUserId) === String(currentUserId);
+        {/* ✅ EMPTY STATE (already correct) */}
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <p className="text-lg">👋 Start conversation</p>
+            <p className="text-sm">Send your first message</p>
+          </div>
+        ) : (
+          messages.map((msg, i) => {
+            const isMe = String(msg.fromUserId) === String(currentUserId);
 
-          return (
-            <div
-              key={msg.messageId || i}
-              className={`mb-4 flex ${isMe ? "justify-end" : "justify-start"}`}
-            >
-              <div className="relative group">
-                <div
-                  className={`px-4 py-2 max-w-xs break-words shadow ${
-                    isMe
-                      ? "bg-blue-500 text-white rounded-2xl"
-                      : "bg-white text-black rounded-2xl"
-                  }`}
-                >
-                  {msg.isDeleted ? (
-                    <p className="italic text-sm opacity-70">
-                      This message was deleted
-                    </p>
-                  ) : editingMsgId === msg.messageId ? (
-                    <div className="bg-white p-2 rounded-lg shadow-inner">
-                      <input
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        autoFocus
-                        className="w-full px-3 py-2 text-sm text-black border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-400"
-                      />
-
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button
-                          onClick={() => setEditingMsgId(null)}
-                          className="px-3 text-black py-1 text-xs rounded-md bg-gray-200"
-                        >
-                          Cancel
-                        </button>
-
-                        <button
-                          onClick={() => handleEditSave(msg.messageId)}
-                          className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {renderMessageContent(msg)}
-                      {msg.isEdited && (
-                        <span className="text-[10px] ml-1 opacity-70">
-                          (edited)
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {isMe && !msg.isDeleted && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveMenu((prev) =>
-                        prev === msg.messageId ? null : msg.messageId,
-                      );
-                    }}
-                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-xs bg-white rounded-full px-1 shadow"
+            return (
+              <div
+                key={msg.messageId || i}
+                className={`mb-4 flex ${
+                  isMe ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div className="relative group">
+                  <div
+                    className={`px-4 py-2 max-w-xs break-words shadow ${
+                      isMe
+                        ? "bg-blue-500 text-white rounded-2xl"
+                        : "bg-white text-black rounded-2xl"
+                    }`}
                   >
-                    ⋮
-                  </button>
-                )}
+                    {msg.isDeleted ? (
+                      <p className="italic text-sm opacity-70">
+                        This message was deleted
+                      </p>
+                    ) : editingMsgId === msg.messageId ? (
+                      <div className="bg-white p-2 rounded-lg shadow-inner">
+                        <input
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          autoFocus
+                          className="w-full px-3 py-2 text-sm text-black border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-400"
+                        />
 
-                <MessageMenu
-                  isOpen={activeMenu === msg.messageId}
-                  messageId={msg.messageId}
-                  onDelete={handleDelete}
-                  onEdit={() => handleEditStart(msg)}
-                  messageType={msg.messageType} // ✅ NEW
-                  isDeleted={msg.isDeleted} // ✅ NEW
-                />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button
+                            onClick={() => setEditingMsgId(null)}
+                            className="px-3 text-black py-1 text-xs rounded-md bg-gray-200"
+                          >
+                            Cancel
+                          </button>
+
+                          <button
+                            onClick={() => handleEditSave(msg.messageId)}
+                            className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {renderMessageContent(msg)}
+                        {msg.isEdited && (
+                          <span className="text-[10px] ml-1 opacity-70">
+                            (edited)
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {isMe && !msg.isDeleted && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenu((prev) =>
+                          prev === msg.messageId ? null : msg.messageId,
+                        );
+                      }}
+                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-xs bg-white rounded-full px-1 shadow"
+                    >
+                      ⋮
+                    </button>
+                  )}
+
+                  <MessageMenu
+                    isOpen={activeMenu === msg.messageId}
+                    messageId={msg.messageId}
+                    onDelete={handleDelete}
+                    onEdit={() => handleEditStart(msg)}
+                    messageType={msg.messageType}
+                    isDeleted={msg.isDeleted}
+                  />
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
 
         <div ref={bottomRef}></div>
       </div>
