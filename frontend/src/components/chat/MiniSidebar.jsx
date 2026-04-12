@@ -21,17 +21,13 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
       return (
         <img
           src={currentUser.avatar.url}
-          onClick={openProfile}
-          className="w-10 h-10 rounded-full object-cover cursor-pointer border-2 border-transparent hover:border-green-400 transition"
+          className="w-10 h-10 rounded-full object-cover border-2 border-transparent hover:border-green-400 transition"
         />
       );
     }
 
     return (
-      <div
-        onClick={openProfile}
-        className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-semibold cursor-pointer hover:bg-indigo-600 transition"
-      >
+      <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-semibold hover:bg-indigo-600 transition">
         {currentUser?.fullName?.charAt(0).toUpperCase()}
       </div>
     );
@@ -39,14 +35,13 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
 
   return (
     <div className="w-16 bg-[#111b21] text-white flex flex-col items-center py-4 justify-between shadow-lg">
+      
       {/* TOP SECTION */}
       <div className="flex flex-col items-center gap-6">
-        {/* APP LOGO */}
         <div className="text-2xl opacity-80 hover:opacity-100 transition cursor-default">
           💬
         </div>
 
-        {/* NEW CHAT */}
         <button
           onClick={openUsers}
           title="New Chat"
@@ -58,6 +53,7 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
 
       {/* BOTTOM SECTION */}
       <div className="flex flex-col items-center gap-5">
+        
         {/* LOGOUT */}
         <button
           onClick={handleLogout}
@@ -68,11 +64,14 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
         </button>
 
         {/* USER AVATAR */}
-        <div className="relative group">
+        <div
+          className="relative group cursor-pointer"
+          onClick={openProfile}   // ✅ FIX: click moved here
+        >
           {renderAvatar()}
 
-          {/* SMALL ACTIVE DOT (optional WhatsApp feel) */}
-          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-[#111b21] rounded-full"></span>
+          {/* ✅ FIX: prevent blocking click */}
+          <span className="pointer-events-none absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-[#111b21] rounded-full"></span>
         </div>
       </div>
     </div>

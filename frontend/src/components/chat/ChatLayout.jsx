@@ -21,14 +21,12 @@ const ChatLayout = () => {
   const [userStatusMap, setUserStatusMap] = useState({});
   const [typingUsers, setTypingUsers] = useState({});
 
-  // SOCKET
   useEffect(() => {
     const s = getSocket();
     if (!s) return;
     setSocket(s);
   }, []);
 
-  // GET CURRENT USER
   useEffect(() => {
     const getMe = async () => {
       const res = await apiFetch("/api/user/get-user-details");
@@ -41,7 +39,6 @@ const ChatLayout = () => {
     getMe();
   }, []);
 
-  // FETCH CHATS
   const fetchChats = async () => {
     const res = await apiFetch("/api/chat/allMessages");
     if (res.success) {
@@ -55,7 +52,6 @@ const ChatLayout = () => {
     fetchChats();
   }, []);
 
-  // FETCH MESSAGES
   const fetchMessages = async (chatId) => {
     toast.loading("Loading messages...");
     const res = await apiFetch(`/api/chat/messages/${chatId}`);
@@ -66,11 +62,10 @@ const ChatLayout = () => {
         message: msg.message,
         messageType: msg.messageType || "text",
         fileUrl: msg.fileUrl || "",
-        fromUserId:
-          msg.fromUserId || msg.senderId?._id || msg.senderId,
-
-        // ✅ FIX: ADD THIS LINE (IMPORTANT)
+        fromUserId: msg.fromUserId || msg.senderId?._id || msg.senderId,
         createdAt: msg.createdAt,
+        deliveredTo: msg.deliveredTo || [],
+        seenBy: msg.seenBy || [],
       }));
 
       setMessages(normalized);
@@ -83,15 +78,12 @@ const ChatLayout = () => {
     }
   };
 
-  // SELECT CHAT
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
     setShowProfile(false);
 
     setChats((prev) =>
-      prev.map((c) =>
-        c._id === chat._id ? { ...c, unreadCount: 0 } : c
-      )
+      prev.map((c) => (c._id === chat._id ? { ...c, unreadCount: 0 } : c)),
     );
 
     fetchMessages(chat._id);
@@ -102,21 +94,18 @@ const ChatLayout = () => {
     socket?.emit("mark-as-seen", { chatId: chat._id });
   };
 
-  // MESSAGE LISTENER
+  // =========================
+  // MESSAGE + DELIVERY + SEEN
+  // =========================
   useEffect(() => {
     if (!socket) return;
 
     const handleMessage = (data) => {
-      if (!data) {
-        toast.error("Message error ❌");
-        return;
-      }
+      if (!data) return;
 
       if (data.chatId === selectedChat?._id) {
         setMessages((prev) => {
-          const exists = prev.some(
-            (msg) => msg.messageId === data.messageId
-          );
+          const exists = prev.some((msg) => msg.messageId === data.messageId);
           if (exists) return prev;
           return [...prev, data];
         });
@@ -130,83 +119,104 @@ const ChatLayout = () => {
                   ...chat,
                   unreadCount: (chat.unreadCount || 0) + 1,
                 }
-              : chat
-          )
+              : chat,
+          ),
         );
       }
 
       fetchChats();
     };
 
-    socket.off("receive-private-message");
+    // ✅ DELIVERY LISTENER
+    const handleDelivered = ({ messageId, userId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.messageId === messageId
+            ? {
+                ...msg,
+                deliveredTo: [...(msg.deliveredTo || []), userId],
+              }
+            : msg,
+        ),
+      );
+    };
+
+    // ✅ SEEN LISTENER
+    const handleSeen = ({ chatId, seenBy }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.chatId === chatId
+            ? {
+                ...msg,
+                seenBy: [...(msg.seenBy || []), seenBy],
+              }
+            : msg,
+        ),
+      );
+    };
+
     socket.on("receive-private-message", handleMessage);
+    socket.on("message-delivered", handleDelivered);
+    socket.on("messages-seen", handleSeen);
 
     return () => {
       socket.off("receive-private-message", handleMessage);
+      socket.off("message-delivered", handleDelivered);
+      socket.off("messages-seen", handleSeen);
     };
   }, [socket, selectedChat]);
 
-  // STATUS LISTENERS
+  // STATUS
   useEffect(() => {
     if (!socket) return;
 
-    const handleOnline = ({ userId }) => {
+    socket.on("user-online", ({ userId }) => {
       setUserStatusMap((prev) => ({
         ...prev,
         [userId]: { isOnline: true },
       }));
-    };
+    });
 
-    const handleOffline = ({ userId, lastSeen }) => {
+    socket.on("user-offline", ({ userId, lastSeen }) => {
       setUserStatusMap((prev) => ({
         ...prev,
         [userId]: { isOnline: false, lastSeen },
       }));
-    };
+    });
 
-    const handleStatus = ({ userId, isOnline, lastSeen }) => {
+    socket.on("user-status", ({ userId, isOnline, lastSeen }) => {
       setUserStatusMap((prev) => ({
         ...prev,
         [userId]: { isOnline, lastSeen },
       }));
-    };
-
-    socket.on("user-online", handleOnline);
-    socket.on("user-offline", handleOffline);
-    socket.on("user-status", handleStatus);
+    });
 
     return () => {
-      socket.off("user-online", handleOnline);
-      socket.off("user-offline", handleOffline);
-      socket.off("user-status", handleStatus);
+      socket.off("user-online");
+      socket.off("user-offline");
+      socket.off("user-status");
     };
   }, [socket]);
 
-  // TYPING LISTENERS
+  // TYPING
   useEffect(() => {
     if (!socket) return;
 
-    const handleTyping = ({ userId }) => {
-      setTypingUsers((prev) => ({
-        ...prev,
-        [userId]: true,
-      }));
-    };
+    socket.on("user-typing", ({ userId }) => {
+      setTypingUsers((prev) => ({ ...prev, [userId]: true }));
+    });
 
-    const handleStopTyping = ({ userId }) => {
+    socket.on("user-stop-typing", ({ userId }) => {
       setTypingUsers((prev) => {
         const updated = { ...prev };
         delete updated[userId];
         return updated;
       });
-    };
-
-    socket.on("user-typing", handleTyping);
-    socket.on("user-stop-typing", handleStopTyping);
+    });
 
     return () => {
-      socket.off("user-typing", handleTyping);
-      socket.off("user-stop-typing", handleStopTyping);
+      socket.off("user-typing");
+      socket.off("user-stop-typing");
     };
   }, [socket]);
 
@@ -218,7 +228,7 @@ const ChatLayout = () => {
         openProfile={() => setShowProfile(true)}
       />
 
-      <div className="hidden md:flex w-[300px] border-r flex-col min-h-0">
+      <div className="hidden md:flex w-[340px] border-r flex-col min-h-0">
         {showProfile ? (
           <ProfilePanel
             user={currentUser}
@@ -230,6 +240,7 @@ const ChatLayout = () => {
             chats={chats}
             onSelectChat={handleSelectChat}
             typingUsers={typingUsers}
+            currentUserId={currentUser?._id}
           />
         )}
       </div>
