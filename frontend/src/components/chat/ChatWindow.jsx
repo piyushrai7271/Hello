@@ -25,18 +25,46 @@ const ChatWindow = ({
   const otherUserId = selectedChat?.members?.[0]?._id;
   const userStatus = userStatusMap?.[otherUserId] || {};
 
-  // ✅ NEW: FORMAT TIME FUNCTION
+  // ✅ FORMAT TIME
   const formatTime = (date) => {
-    if (!date) return ""; // ✅ handle undefined
-
+    if (!date) return "";
     const d = new Date(date);
-
-    if (isNaN(d.getTime())) return ""; // ✅ handle invalid date
-
+    if (isNaN(d.getTime())) return "";
     return d.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // ✅ FIXED: TICK STATUS (CORRECT LOGIC)
+  const getMessageStatus = (msg) => {
+    if (!msg) return "sent";
+
+    // ✅ Seen = highest priority
+    if (msg.seenBy?.includes(otherUserId)) return "seen";
+
+    // ✅ If user is online → delivered
+    if (userStatusMap?.[otherUserId]?.isOnline) return "delivered";
+
+    // ✅ Otherwise → sent
+    return "sent";
+  };
+
+  // ✅ FIXED: BETTER UI COLORS (VISIBLE ON BLUE)
+  const renderTicks = (msg) => {
+    const status = getMessageStatus(msg);
+
+    if (status === "sent") {
+      return <span className="text-white/60 ml-1">✓</span>;
+    }
+
+    if (status === "delivered") {
+      return <span className="text-white/90 ml-1">✓✓</span>;
+    }
+
+    if (status === "seen") {
+      return <span className="text-yellow-300 ml-1">✓✓</span>;
+    }
   };
 
   const renderMessageContent = (msg) => {
@@ -120,7 +148,7 @@ const ChatWindow = ({
     socket.on("message-deleted", ({ messageId, type }) => {
       if (type === "delete-for-me") {
         setMessages((prev) =>
-          prev.filter((msg) => msg.messageId !== messageId),
+          prev.filter((msg) => msg.messageId !== messageId)
         );
       }
 
@@ -133,8 +161,8 @@ const ChatWindow = ({
                   message: "This message was deleted",
                   isDeleted: true,
                 }
-              : msg,
-          ),
+              : msg
+          )
         );
       }
     });
@@ -151,8 +179,8 @@ const ChatWindow = ({
         prev.map((msg) =>
           msg.messageId === messageId
             ? { ...msg, message: newMessage, isEdited }
-            : msg,
-        ),
+            : msg
+        )
       );
     });
 
@@ -250,7 +278,8 @@ const ChatWindow = ({
           </div>
         ) : (
           messages.map((msg, i) => {
-            const isMe = String(msg.fromUserId) === String(currentUserId);
+            const isMe =
+              String(msg.fromUserId) === String(currentUserId);
 
             return (
               <div
@@ -271,38 +300,14 @@ const ChatWindow = ({
                       <p className="italic text-sm opacity-70">
                         This message was deleted
                       </p>
-                    ) : editingMsgId === msg.messageId ? (
-                      <div className="bg-white p-2 rounded-lg shadow-inner">
-                        <input
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          autoFocus
-                          className="w-full px-3 py-2 text-sm text-black border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-
-                        <div className="flex justify-end gap-2 mt-2">
-                          <button
-                            onClick={() => setEditingMsgId(null)}
-                            className="px-3 text-black py-1 text-xs rounded-md bg-gray-200"
-                          >
-                            Cancel
-                          </button>
-
-                          <button
-                            onClick={() => handleEditSave(msg.messageId)}
-                            className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
                     ) : (
                       <>
                         {renderMessageContent(msg)}
 
-                        {/* ✅ NEW: TIME */}
-                        <div className="text-[10px] mt-1 text-right opacity-70">
+                        {/* ✅ TIME + TICKS */}
+                        <div className="text-[10px] mt-1 flex justify-end items-center gap-1 opacity-80">
                           {formatTime(msg.createdAt)}
+                          {isMe && renderTicks(msg)}
                         </div>
 
                         {msg.isEdited && (
@@ -319,7 +324,9 @@ const ChatWindow = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveMenu((prev) =>
-                          prev === msg.messageId ? null : msg.messageId,
+                          prev === msg.messageId
+                            ? null
+                            : msg.messageId
                         );
                       }}
                       className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-xs bg-white rounded-full px-1 shadow"
