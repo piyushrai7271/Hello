@@ -35,7 +35,9 @@ const getChatMessages = asyncHandler(async (req, res) => {
     chatId,
     deletedFor: { $ne: userId }, // 🔥 hide "delete for me"
   })
-    .select("senderId message messageType fileUrl createdAt isDeleted")
+    .select(
+      "senderId message messageType fileUrl createdAt isDeleted deliveredTo seenBy"
+    )
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -52,10 +54,11 @@ const getChatMessages = asyncHandler(async (req, res) => {
     message: msg.isDeleted ? "This message was deleted" : msg.message,
     messageType: msg.isDeleted ? "text" : msg.messageType || "text",
     fileUrl: msg.isDeleted ? "" : msg.fileUrl || "",
-    fromUserId:
-      msg.senderId?._id?.toString() || msg.senderId.toString(),
+    fromUserId: msg.senderId?._id?.toString() || msg.senderId.toString(),
     createdAt: msg.createdAt,
     isDeleted: msg.isDeleted || false, // 🔥 NEW
+    deliveredTo: msg.deliveredTo || [],
+    seenBy: msg.seenBy || [],
   }));
 
   return res.status(200).json(
@@ -84,7 +87,8 @@ const getUserChats = asyncHandler(async (req, res) => {
     .populate("members", "fullName avatar")
     .populate({
       path: "lastMessage",
-      select: "message messageType fileUrl senderId createdAt",
+      select:
+        "message messageType fileUrl senderId createdAt deliveredTo seenBy",
       populate: {
         path: "senderId",
         select: "fullName",
@@ -231,7 +235,7 @@ const uploadMessageFile = asyncHandler(async (req, res) => {
       messageType = "audio";
     }
 
-    // console.log("UPLOAD RESULT:", result); 
+    // console.log("UPLOAD RESULT:", result);
 
     return res.status(200).json(
       new ApiResponse(
