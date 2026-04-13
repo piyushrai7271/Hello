@@ -135,7 +135,9 @@ Hellow/
    PORT=4000
    MONGO_URI=your_mongodb_connection_string
    ACCESS_TOKEN_SECRET=your_access_secret
+   ACCESS_TOKEN_EXPIRY=your_expiry
    REFRESH_TOKEN_SECRET=your_refresh_secret
+   REFRESH_TOKEN_EXPIRY=your_refresh_expiry
    CLOUDINARY_CLOUD_NAME=your_cloud_name
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
