@@ -1,5 +1,5 @@
 
-# 💬 Hellow — Real-Time Chat Application
+# 💬 Hello — Real-Time Chat Application
 
 > A modern, full-stack real-time chat application built with React, Node.js, Socket.IO, and MongoDB.
 
