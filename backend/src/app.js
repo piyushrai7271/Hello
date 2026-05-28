@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
 import { globalRateLimiter } from "./middlewares/rateLimiter.middleware.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import { corsOptions } from "./config/cors.js"; // ✅ IMPORT

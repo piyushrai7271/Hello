@@ -41,7 +41,6 @@ const uploadOnCloudinary = (file, folder = "chat-files") => {
 
       // 🔥 VERY IMPORTANT LINE
       streamifier.createReadStream(file.buffer).pipe(uploadStream);
-
     } catch (err) {
       console.error("❌ Upload wrapper error:", err);
       reject(err);
@@ -92,9 +91,4 @@ const upload = multer({
   fileFilter,
 });
 
-export {
-  cloudinary,
-  upload,
-  uploadOnCloudinary,
-  deleteFromCloudinary,
-};
+export { cloudinary, upload, uploadOnCloudinary, deleteFromCloudinary };
