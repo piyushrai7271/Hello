@@ -18,7 +18,6 @@ import {
   clearLoginAttempts,
 } from "../services/loginSecurity.service.js";
 
-
 const registerUser = asyncHandler(async (req, res) => {
   // take input from body
   const { fullName, email, mobileNumber, bio, gender, password } = req.body;
@@ -64,32 +63,41 @@ const loginUser = asyncHandler(async (req, res) => {
 
   // validate comming input
   if (!email || !password) {
-    throw new ApiError(400, "email or password is missing");
+    throw new ApiError(400, "Email or password is missing");
   }
 
-  // 1. Check if account is locked (VERY IMPORTANT)
-  const isLocked = await isAccountLocked(email);
+  // normalize email
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // 1. Check if account is locked
+  const isLocked = await isAccountLocked(normalizedEmail);
+
   if (isLocked) {
     throw new ApiError(403, "Account is temporarily locked. Try again later.");
   }
 
-  // find user with email
-  const user = await User.findOne({ email });
+  // 2. Find user
+  const user = await User.findOne({
+    email: normalizedEmail,
+  });
 
+  // user not found
   if (!user) {
     // record failed attempt
-    await recordFailedAttempt(email);
+    await recordFailedAttempt(normalizedEmail);
+
     throw new ApiError(401, "Invalid email or password");
   }
 
-  // if user found validate password
+  // 3. Validate password
   const isPasswordValid = await user.isPasswordCorrect(password);
 
+  // invalid password
   if (!isPasswordValid) {
-    //record failed attempt
-    const locked = await recordFailedAttempt(email);
+    // record failed attempt
+    const locked = await recordFailedAttempt(normalizedEmail);
 
-    //if account just got locked
+    // account just got locked
     if (locked) {
       throw new ApiError(403, "Account locked due to too many failed attempts");
     }
@@ -97,19 +105,19 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  // 2. RESET attempts on success (VERY IMPORTANT 🔥)
-  await clearLoginAttempts(email);
+  // 4. Clear failed attempts after successful login
+  await clearLoginAttempts(normalizedEmail);
 
-  // if password is correct generate access and refresh token
+  // 5. Generate tokens
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
   );
 
-  // removing password and refreshToken from user before sending
+  // remove sensitive fields
   user.password = undefined;
   user.refreshToken = undefined;
 
-  // return response with token
+  // 6. Send response
   return res
     .status(200)
     .cookie("accessToken", accessToken, getAccessTokenOptions())
@@ -238,7 +246,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        _id:user._id,
+        _id: user._id,
         fullName: user.fullName,
         email: user.email,
         mobileNumber: user.mobileNumber,
@@ -260,14 +268,14 @@ const uploadAvatar = asyncHandler(async (req, res) => {
   // Store old public_id
   const oldPublicId = user.avatar?.public_id;
 
-  // 1️⃣ Upload new avatar
+  //  Upload new avatar
   const uploadResult = await uploadOnCloudinary(req.file, "avatars");
 
   if (!uploadResult) {
     throw new ApiError(500, "Failed to upload avatar");
   }
 
-  // 2️⃣ Update DB FIRST
+  // Update DB FIRST
   user.avatar = {
     url: uploadResult.secure_url,
     public_id: uploadResult.public_id,
@@ -275,7 +283,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  // 3️⃣ Delete old avatar AFTER success
+  // Delete old avatar AFTER success
   if (oldPublicId) {
     try {
       await deleteFromCloudinary(oldPublicId);
@@ -285,7 +293,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     }
   }
 
-  // 4️⃣ Response
+  // Response
   return res
     .status(200)
     .json(
@@ -375,7 +383,7 @@ const updateProfileDetails = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Unauthorized");
   }
 
-  // ✅ Build update object dynamically
+  // Build update object dynamically
   const updateData = {};
 
   if (fullName && fullName.trim() !== "") {
@@ -388,29 +396,29 @@ const updateProfileDetails = asyncHandler(async (req, res) => {
 
   if (!["Male", "Female", "Other"].includes(gender)) {
     throw new ApiError(400, "Please provide valid gender");
-  } else{
+  } else {
     updateData.gender = gender.trim();
   }
 
-  // ❌ If nothing to update
+  //  If nothing to update
   if (Object.keys(updateData).length === 0) {
     throw new ApiError(400, "No valid fields to update");
   }
 
-  // ✅ Single DB call (FAST)
+  // Single DB call (FAST)
   const updatedUser = await User.findByIdAndUpdate(
     userId,
     { $set: updateData },
-    { returnDocument:"after", runValidators: true }
-  ).select("-password -refreshToken"); // 🔥 SECURITY
+    { returnDocument: "after", runValidators: true }
+  ).select("-password -refreshToken"); // SECURITY
 
   if (!updatedUser) {
     throw new ApiError(404, "User not found");
   }
 
-  return res.status(200).json(
-    new ApiResponse(200, updatedUser, "Profile updated successfully")
-  );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedUser, "Profile updated successfully"));
 });
 const getAllUsers = asyncHandler(async (req, res) => {
   const { search = "", page = 1, limit = 20 } = req.query;
@@ -435,7 +443,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
         users,
         total,
         page: parseInt(page),
-        hasMore: skip + users.length < total, // ✅ important for frontend
+        hasMore: skip + users.length < total, // important for frontend
       },
       "Users fetched successfully"
     )

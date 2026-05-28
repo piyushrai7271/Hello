@@ -1,12 +1,10 @@
 import { EVENTS } from "../config/event.js";
 
-
 // private message
 const emitPrivateMessage = (io, { toUserId, fromUserId, payload }) => {
   io.to(toUserId.toString()).emit(EVENTS.RECEIVE_PRIVATE_MESSAGE, payload);
   io.to(fromUserId.toString()).emit(EVENTS.RECEIVE_PRIVATE_MESSAGE, payload);
 };
-
 
 // delivery
 const emitMessageDelivered = (io, { fromUserId, messageId, toUserId }) => {
@@ -16,9 +14,7 @@ const emitMessageDelivered = (io, { fromUserId, messageId, toUserId }) => {
   });
 };
 
-
 // delete
-
 const emitMessageDeleted = (io, { members, messageId, type }) => {
   members.forEach((id) => {
     io.to(id.toString()).emit(EVENTS.MESSAGE_DELETED, {
@@ -28,10 +24,11 @@ const emitMessageDeleted = (io, { members, messageId, type }) => {
   });
 };
 
-
 // edit
-
-const emitMessageEdited = (io, { members, messageId, newMessage, isEdited }) => {
+const emitMessageEdited = (
+  io,
+  { members, messageId, newMessage, isEdited }
+) => {
   members.forEach((id) => {
     io.to(id.toString()).emit(EVENTS.MESSAGE_EDITED, {
       messageId,
@@ -40,7 +37,6 @@ const emitMessageEdited = (io, { members, messageId, newMessage, isEdited }) => 
     });
   });
 };
-
 
 // seen
 const emitMessagesSeen = (io, { members, chatId, seenBy }) => {
@@ -54,7 +50,7 @@ const emitMessagesSeen = (io, { members, chatId, seenBy }) => {
   });
 };
 
-// 🔥 NEW: emit delivery after reconnect
+// NEW: emit delivery after reconnect
 const emitBulkDelivered = (io, deliveries, userId) => {
   deliveries.forEach(({ messageId, senderId }) => {
     io.to(senderId).emit("message-delivered", {
@@ -72,7 +68,6 @@ const emitTypingStart = (io, { toUserId, userId }) => {
 const emitTypingStop = (io, { toUserId, userId }) => {
   io.to(toUserId.toString()).emit(EVENTS.USER_STOP_TYPING, { userId });
 };
-
 
 // ONLINE / OFFLINE
 const emitUserOnline = (socket, userId) => {
@@ -93,5 +88,5 @@ export {
   emitTypingStop,
   emitUserOnline,
   emitUserOffline,
-  emitBulkDelivered
+  emitBulkDelivered,
 };

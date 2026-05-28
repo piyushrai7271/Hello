@@ -178,5 +178,5 @@ export {
   deleteMessageService,
   editMessageService,
   markAsSeenService,
-  syncUndeliveredMessagesService
+  syncUndeliveredMessagesService,
 };
