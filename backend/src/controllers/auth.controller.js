@@ -234,7 +234,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .cookie("refreshToken", refreshToken, getRefreshTokenOptions())
       .json(new ApiResponse(200, {}, "Access token refreshed !!"));
   } catch (error) {
-    throw new ApiError(500, "Internal server error");
+    console.error("Refresh Token Error:", error);
+    throw new ApiError(
+      error.statusCode || 401,
+      error.message || "Refresh token failed"
+    );
   }
 });
 const getCurrentUser = asyncHandler(async (req, res) => {
@@ -449,6 +453,44 @@ const getAllUsers = asyncHandler(async (req, res) => {
     )
   );
 });
+const getUserById = asyncHandler(async (req, res) => {
+  // get user id from params
+  const { id } = req.params;
+
+  // validate id
+  if (!id) {
+    throw new ApiError(400, "User id is required");
+  }
+
+  // find user
+  const user = await User.findById(id).select(
+    "fullName email mobileNumber bio gender avatar lastSeen createdAt"
+  );
+
+  // validate user exists
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // return response
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        bio: user.bio,
+        gender: user.gender,
+        avatar: user.avatar,
+        lastSeen: user.lastSeen,
+        createdAt: user.createdAt,
+      },
+      "Profile fetched successfully"
+    )
+  );
+});
 
 export {
   registerUser,
@@ -462,4 +504,5 @@ export {
   deleteAvatar,
   updateProfileDetails,
   getAllUsers,
+  getUserById,
 };

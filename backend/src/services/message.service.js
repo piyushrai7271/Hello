@@ -8,6 +8,7 @@ const sendPrivateMessageService = async ({
   message,
   messageType,
   fileUrl,
+  fileName
 }) => {
   // FIND OR CREATE CHAT
   let chat = await Chat.findOne({
@@ -37,6 +38,7 @@ const sendPrivateMessageService = async ({
     message: message || "",
     messageType: finalMessageType,
     fileUrl: fileUrl || "",
+    fileName: fileName || "",
     deliveredTo: [],
     seenBy: [],
   });

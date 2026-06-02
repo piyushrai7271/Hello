@@ -62,7 +62,7 @@ const globalRateLimiter = rateLimit({
   store: createRedisStore("global-limit:"),
 
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
 
   standardHeaders: true,
   legacyHeaders: false,
@@ -114,7 +114,7 @@ const userRateLimiter = rateLimit({
   store: createRedisStore("user-limit:"),
 
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 500,
 
   keyGenerator: userKeyGenerator,
 

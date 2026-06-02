@@ -7,9 +7,9 @@ import {
 import { EVENTS } from "../../config/event.js";
 
 const registerPrivateChat = (io, socket) => {
-  socket.on("private-message", async ({ toUserId, message, messageType, fileUrl }) => {
+  socket.on("private-message", async ({ toUserId, message, messageType, fileUrl, fileName }) => {
 
-    if (!toUserId || (!message && !fileUrl)) {
+    if (!toUserId || (!message && !fileUrl && !fileName)) {
       return socket.emit(EVENTS.ERROR, "Invalid data");
     }
 
@@ -21,6 +21,7 @@ const registerPrivateChat = (io, socket) => {
           message,
           messageType,
           fileUrl,
+          fileName
         });
 
       const payload = {
@@ -30,6 +31,7 @@ const registerPrivateChat = (io, socket) => {
         message: savedMessage.message,
         messageType: savedMessage.messageType,
         fileUrl: savedMessage.fileUrl,
+        fileName: savedMessage.fileName,
         createdAt: savedMessage.createdAt,
       };
 
