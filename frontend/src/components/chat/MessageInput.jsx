@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { apiFetch } from "../../api/api";
 
 const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   const fileRef = useRef();
@@ -34,16 +35,13 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
       const formData = new FormData();
       formData.append("message", file);
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/chat/upload-message-file`,
+      const data = await apiFetch(
+        "/api/chat/upload-message-file",
         {
           method: "POST",
           body: formData,
-          credentials: "include",
         }
       );
-
-      const data = await res.json();
 
       if (data.success) {
         toast.success("File sent 📤", { id: toastId });
@@ -52,16 +50,24 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
           toUserId: selectedChat.members[0]._id,
           messageType: data.data.messageType,
           fileUrl: data.data.fileUrl,
+          fileName: data.data.fileName,
         });
       } else {
-        toast.error("Upload failed ❌", { id: toastId });
+        toast.error(data.message || "Upload failed ❌", {
+          id: toastId,
+        });
       }
     } catch (error) {
       console.error("Upload Error:", error);
-      toast.error("Something went wrong ❌", { id: toastId });
+      toast.error("Something went wrong ❌", {
+        id: toastId,
+      });
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+
+      if (fileRef.current) {
+        fileRef.current.value = "";
+      }
     }
   };
 
@@ -88,7 +94,7 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
     }, 1500);
   };
 
-  // ✅ ENTER SEND / SHIFT ENTER NEW LINE
+  // ✅ ENTER SEND / SHIFT+ENTER NEW LINE
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -129,7 +135,9 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
         onClick={() => setShowMenu((prev) => !prev)}
         disabled={uploading}
         className={`text-xl transition ${
-          uploading ? "opacity-50 cursor-not-allowed" : "hover:text-blue-500"
+          uploading
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:text-blue-500"
         }`}
       >
         {uploading ? "⏳" : "➕"}
@@ -162,7 +170,12 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
       )}
 
       {/* FILE INPUT */}
-      <input type="file" hidden ref={fileRef} onChange={handleFile} />
+      <input
+        type="file"
+        hidden
+        ref={fileRef}
+        onChange={handleFile}
+      />
 
       {/* TEXTAREA */}
       <textarea
