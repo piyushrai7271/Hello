@@ -1,5 +1,8 @@
 import express from "express";
-import {authRateLimiter,userRateLimiter} from "../middlewares/rateLimiter.middleware.js";
+import {
+  authRateLimiter,
+  userRateLimiter,
+} from "../middlewares/rateLimiter.middleware.js";
 import {
   registerUser,
   loginUser,
@@ -11,7 +14,8 @@ import {
   updateAvatar,
   deleteAvatar,
   updateProfileDetails,
-  getAllUsers
+  getAllUsers,
+  getUserById,
 } from "../controllers/auth.controller.js";
 import { upload } from "../config/cloudinary.js";
 import jwtValidation from "../middlewares/auth.middleware.js";
@@ -19,17 +23,24 @@ const router = express.Router();
 
 // Unprotected Routes..
 router.post("/register", registerUser);
-router.post("/login",authRateLimiter, loginUser);
+router.post("/login", authRateLimiter, loginUser);
 
 // Protected Routes ..
 router.post("/logout", jwtValidation, logOutUser);
 router.post("/change-password", jwtValidation, changePassword);
 router.post("/refresh-token", refreshAccessToken);
-router.get("/get-user-details", jwtValidation,userRateLimiter, getCurrentUser);
+router.get("/get-user-details", jwtValidation, userRateLimiter, getCurrentUser);
 router.post("/addAvatar", jwtValidation, upload.single("avatar"), uploadAvatar);
-router.put("/updateAvatar",jwtValidation,upload.single("avatar"),updateAvatar);
+router.put(
+  "/updateAvatar",
+  jwtValidation,
+  upload.single("avatar"),
+  updateAvatar
+);
 router.delete("/deleteAvatar", jwtValidation, deleteAvatar);
-router.put("/update-profile",jwtValidation,updateProfileDetails);
-router.get("/all-users",jwtValidation,getAllUsers);
+router.put("/update-profile", jwtValidation, updateProfileDetails);
+router.get("/all-users", jwtValidation, getAllUsers);
+
+router.get("/:id/profile", jwtValidation, getUserById);
 
 export default router;

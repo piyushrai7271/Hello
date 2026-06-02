@@ -213,12 +213,6 @@ const uploadMessageFile = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Message file is missing");
     }
 
-    // console.log("FILE DEBUG:", {
-    //   name: req.file.originalname,
-    //   type: req.file.mimetype,
-    //   size: req.file.size,
-    // });
-
     const result = await uploadOnCloudinary(req.file, "chat-files");
 
     if (!result) {
@@ -235,13 +229,12 @@ const uploadMessageFile = asyncHandler(async (req, res) => {
       messageType = "audio";
     }
 
-    // console.log("UPLOAD RESULT:", result);
-
     return res.status(200).json(
       new ApiResponse(
         200,
         {
           fileUrl: result.secure_url,
+          fileName: req.file.originalname,
           messageType,
           public_id: result.public_id,
         },
@@ -254,4 +247,94 @@ const uploadMessageFile = asyncHandler(async (req, res) => {
   }
 });
 
-export { getChatMessages, getUserChats, createNewChat, uploadMessageFile };
+const getSharedMedia = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  // validate chatId
+  if (!chatId) {
+    throw new ApiError(400, "Chat ID is required");
+  }
+
+  // check chat exists
+  const chat = await Chat.findById(chatId);
+
+  if (!chat) {
+    throw new ApiError(404, "Chat not found");
+  }
+
+  // security check
+  const isMember = chat.members.some(
+    (member) => member.toString() === req.user._id.toString()
+  );
+
+  if (!isMember) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  // get all shared images
+  const media = await Message.find({
+    chatId,
+    messageType: "image",
+    isDeleted: false,
+  })
+    .select("_id fileUrl createdAt senderId")
+    .sort({ createdAt: -1 });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      media,
+      "Shared media fetched successfully"
+    )
+  );
+});
+const getSharedFiles = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  // validate chatId
+  if (!chatId) {
+    throw new ApiError(400, "Chat ID is required");
+  }
+
+  // check chat exists
+  const chat = await Chat.findById(chatId);
+
+  if (!chat) {
+    throw new ApiError(404, "Chat not found");
+  }
+
+  // security check
+  const isMember = chat.members.some(
+    (member) => member.toString() === req.user._id.toString()
+  );
+
+  if (!isMember) {
+    throw new ApiError(403, "Access denied");
+  }
+
+  // get all shared files
+  const files = await Message.find({
+    chatId,
+    messageType: "file",
+    isDeleted: false,
+  })
+    .select("_id fileUrl fileName createdAt senderId")
+    .sort({ createdAt: -1 });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      files,
+      "Shared files fetched successfully"
+    )
+  );
+});
+
+export { 
+  getChatMessages,
+  getUserChats, 
+  createNewChat, 
+  uploadMessageFile,
+  getSharedMedia,
+  getSharedFiles 
+};
