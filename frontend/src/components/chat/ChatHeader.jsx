@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
-const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
+const ChatHeader = ({
+  selectedChat,
+  isTyping,
+  isOnline,
+  lastSeen,
+  onProfileClick,
+}) => {
   if (!selectedChat) return null;
 
   const user = selectedChat.members[0];
@@ -41,9 +47,10 @@ const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
 
   return (
     <div className="p-4 border-b flex justify-between items-center bg-white shrink-0">
-      
-      <div className="flex items-center gap-3">
-
+      <div
+        className="flex items-center gap-3 cursor-pointer"
+        onClick={onProfileClick}
+      >
         {user?.avatar?.url ? (
           <img
             src={user.avatar.url}
@@ -61,7 +68,7 @@ const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
 
           <p className="text-xs text-gray-500">
             {isTyping
-              ? `Typing${dots}` // ✅ animated
+              ? `Typing${dots}`
               : isOnline
               ? "🟢 Online"
               : formatLastSeen(lastSeen)}
